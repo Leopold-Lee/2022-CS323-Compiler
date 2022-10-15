@@ -1,11 +1,9 @@
 %{
     #include "node.hpp"
     int isError = 0;
-    #define LEXER_ERROR_OUTPUT stdout
 %}
 %{
     #include"syntax.tab.h"
-    /* library inclusions */ 
     int yycolno = 1;
     extern int yylineno;
     #define YY_USER_ACTION \
@@ -14,14 +12,6 @@
         yylloc.last_line = yylineno; \
         yylloc.last_column = yycolno + yyleng;\
         yycolno += yyleng;
-    //INT32_10 [+-]?(0|([1-9]{digit}*))
-    /*
-    it seems that in bison and flex,
-    the YYLTYPE's definition is different
-    one is a struct and another look like the before one's pointer
-    */
-    //UFLOAT32 {digit}+(.{digit}+)?([Ee][+-]?{digit}+)?
-    //%option c++
 %}
 %option noyywrap
 letters [A-Za-z]
