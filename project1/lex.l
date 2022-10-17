@@ -1,6 +1,7 @@
 %{
     #include "node.hpp"
     int isError = 0;
+    #define LEXER_error_OUTPUT stdout
 %}
 %{
     #include"syntax.tab.h"
@@ -14,16 +15,20 @@
         yycolno += yyleng;
 %}
 %option noyywrap
-letters [A-Za-z]
-letters_ {letters}|_
-digit [0-9]
-digit_hex [0-9a-fA-F]
-int 0|([1-9]{digit}*)
-int_hex 0x(0|[1-9a-fA-F]{digit_hex}*)
-float {int}\.{digit}+
-identifier {letters_}({letters_}|{digit})*
-char '.'
-char_hex '\\x(0|[1-9a-fA-F]{digit_hex})'
+letters                     [A-Za-z]
+letters_                    {letters}|_
+digit                       [0-9]
+digit_hex                   [0-9a-fA-F]
+int                         ([+-]?)(0|([1-9]{digit}*))
+int_hex                     0x(0|[1-9a-fA-F]{digit_hex}*)
+float                       [+-]?{int}\.{digit}+
+identifier                  {letters_}({letters_}|{digit})*
+char                        '.'
+char_hex                    '\\x(0|[1-9a-fA-F]{digit_hex})'
+leading_zeros_in_hex_error  0x(00{digit_16}*)
+leading_zeros_in_hex_char_error  '\\x(00{digit_16}*)''
+illegal_hex_error           '\\x[0-9a-zA-Z]*'
+illegal_id_error            {digit}+{identifier}
 %%
 "//" {
     char c = yyinput();
@@ -179,5 +184,24 @@ char_hex '\\x(0|[1-9a-fA-F]{digit_hex})'
     yylval.node = new Node(false, "ID", yytext);
     return ID;
 }
-[0-9]+{identifier} {}
+{leading_zeros_in_hex_error} {
+    isError = 1;
+    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+}
+{leading_zeros_in_hex_char_error} {
+    isError = 1;
+    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+}
+{illegal_hex_error} {
+    isError = 1;
+    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+}
+{illegal_id_error} {
+    isError = 1;
+    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+}
+. {
+    isError = 1;
+    fprintf(LEXER_ERROR_OUTPUT, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+}
 %%
