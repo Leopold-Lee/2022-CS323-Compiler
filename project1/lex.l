@@ -1,7 +1,6 @@
 %{
     #include "node.hpp"
     int isError = 0;
-    #define LEXER_error_OUTPUT stdout
 %}
 %{
     #include"syntax.tab.h"
@@ -25,8 +24,8 @@ float                       [+-]?{int}\.{digit}+
 identifier                  {letters_}({letters_}|{digit})*
 char                        '.'
 char_hex                    '\\x(0|[1-9a-fA-F]{digit_hex})'
-leading_zeros_in_hex_error  0x(00{digit_16}*)
-leading_zeros_in_hex_char_error  '\\x(00{digit_16}*)''
+leading_zeros_in_hex_error  0x(00{digit_hex}*)
+leading_zeros_in_hex_char_error  '\\x(00{digit_hex}*)''
 illegal_hex_error           '\\x[0-9a-zA-Z]*'
 illegal_id_error            {digit}+{identifier}
 %%
@@ -165,7 +164,7 @@ illegal_id_error            {digit}+{identifier}
     return INT;
 }
 {int_hex} {
-    yylval.node = new Node(false, "INT", std::to_string(std::stoi(yytext, nullptr, 0)));
+    yylval.node = new Node(false, "INT", yytext);
     return INT;
 }
 {char} {
@@ -186,22 +185,32 @@ illegal_id_error            {digit}+{identifier}
 }
 {leading_zeros_in_hex_error} {
     isError = 1;
-    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    yylval.node = new Node(false, "ERROR", yytext);
+    return ERROR;
 }
 {leading_zeros_in_hex_char_error} {
     isError = 1;
-    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    yylval.node = new Node(false, "ERROR", yytext);
+    return ERROR;
 }
 {illegal_hex_error} {
     isError = 1;
-    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    yylval.node = new Node(false, "ERROR", yytext);
+    return ERROR;
 }
 {illegal_id_error} {
     isError = 1;
-    fprintf(LEXER_ERROR_OUTPUT,"Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    yylval.node = new Node(false, "ERROR", yytext);
+    return ERROR;
 }
 . {
     isError = 1;
-    fprintf(LEXER_ERROR_OUTPUT, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", yylineno, yytext);
+    yylval.node = new Node(false, "ERROR", yytext);
+    return ERROR;
 }
 %%

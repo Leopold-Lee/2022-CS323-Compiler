@@ -2,6 +2,7 @@
     #include "lex.yy.c"
     #include <iostream>
     void yyerror(const char *s);
+    void error_info(std::string s);
     void lineinfor(void);
     void traverse(string tab, Node *node);
     Node* root;
@@ -14,10 +15,10 @@
     Node* node;
 }
 %token INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN     
-%token GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC LT LE  
+%token GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC LT LE ERROR 
 
 %type<node> INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT      
-%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC      
+%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR 
 
 %type <node> Program ExtDefList ExtDef ExtDecList Specifier StructSpecifier VarDec
 %type <node> FunDec VarList ParamDec CompSt StmtList Stmt DefList Def DecList Dec Args Exp
@@ -124,6 +125,8 @@ FunDec:
         $$->add_sub($2);
         $$->add_sub($3);
     }
+    | ID LP error { error_info("Missing closing parenthesis ')'"); }
+    | ID LP VarList error { error_info("Missing closing parenthesis ')'"); }
     ;
 VarList:
     ParamDec COMMA VarList {
@@ -205,6 +208,7 @@ Stmt:
         $$->add_sub($4);
         $$->add_sub($5);
     }
+    | RETURN Exp error { std::cout << "Missing semicolon ';'\n"; }
     ;
 /* local definition */
 DefList: {
@@ -223,6 +227,7 @@ Def:
         $$->add_sub($2);
         $$->add_sub($3);        
     }
+    | error DecList SEMI {error_info("Missing specifier"); }
     ;
 DecList:
     Dec {
@@ -386,6 +391,17 @@ Exp:
         $$ = new Node("Exp", @$.first_line); 
         $$->add_sub($1);
     }
+    | ERROR {
+        $$ = new Node("Exp", @$.first_line); 
+        $$->add_sub($1);
+    }
+    | Exp ERROR Exp {
+        $$ = new Node("Exp", @$.first_line); 
+        $$->add_sub($1);
+        $$->add_sub($2);
+        $$->add_sub($3);
+    }
+    | ID LP Args error { error_info("Missing closing parenthesis ')'"); }
     ;
 Args:
     Exp COMMA Args {
@@ -401,6 +417,7 @@ Args:
     ;
 
 %%
+
 void traverse(string tab, Node* root) {
     if(root->is_empty) return;
     vector<Node*> subs = root->sub_nodes;
@@ -426,12 +443,9 @@ void traverse(string tab, Node* root) {
 
 void yyerror(const char *s){
     isError=1;
-    fprintf(PARSER_error_OUTPUT,"Error type B at Line %d: ",yylloc.first_line-1);
-    //fprintf(PARSER_error_OUTPUT, "syntax Error: %s\n", s);
-    //lineinfor();
+    fprintf(stderr,"Error type B at Line %d: ",yylloc.first_line-1);
 }
 
-/* void lineinfor(void){
-    // fprintf(PARSER_error_OUTPUT, "begin at:(%d,%d)\n",yylloc.first_line,yylloc.first_column);
-    // fprintf(PARSER_error_OUTPUT, "end at:(%d,%d)\n",yylloc.last_line,yylloc.last_column);
-} */
+void error_info(std::string s){
+    std::cerr << s << std::endl;
+}
