@@ -164,7 +164,7 @@ illegal_id_error            {digit}+{identifier}
     return INT;
 }
 {int_hex} {
-    yylval.node = new Node(false, "INT", yytext);
+    yylval.node = new Node(false, "INT", std::to_string(strtol(yytext,nullptr,0)));
     return INT;
 }
 {char} {

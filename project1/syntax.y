@@ -17,6 +17,11 @@
 %token INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN     
 %token GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC LT LE ERROR 
 
+%left PLUS MINUS 
+%left MUL DIV
+%nonassoc LOWER_ELSE      
+%nonassoc ELSE 
+
 %type<node> INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT      
 %type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR 
 
@@ -58,6 +63,8 @@ ExtDef:
         $$->add_sub($2);
         $$->add_sub($3);
     }
+    |  Specifier ExtDecList error {error_info("Missing semicolon ';'");}
+    |  Specifier error {error_info("Missing semicolon ';'");}
     ;
 ExtDecList:
     VarDec {
@@ -70,6 +77,7 @@ ExtDecList:
         $$->add_sub($2);
         $$->add_sub($3);
     }
+    | VarDec ExtDecList error {error_info("Missing comma ','");}
     ;
 /* specifier */
 Specifier:
@@ -96,6 +104,8 @@ StructSpecifier:
         $$->add_sub($1);  
         $$->add_sub($2);  
     }
+    | STRUCT ID LC DefList error {error_info("Missing closing curly braces '}'");}
+    | STRUCT ID DefList RC error {error_info("Missing beginning curly braces '{'");}
     ;
 /* declarator */
 VarDec:
@@ -110,6 +120,11 @@ VarDec:
         $$->add_sub($3);
         $$->add_sub($4);
     }
+    | ERROR {
+        $$ = new Node("VarDec", @$.first_line);
+        $$->add_sub($1);     
+    }
+    | VarDec LB INT error {error_info("Missing closing bracket ']'");}
     ;
 FunDec:
     ID LP VarList RP {
@@ -156,6 +171,7 @@ CompSt:
         $$->add_sub($3);
         $$->add_sub($4);
     }
+    /* | LC DefList StmtList error {error_info("Missing closing curly braces '}'");} */
     ;
 StmtList:{
     $$ = new Node();
@@ -182,7 +198,7 @@ Stmt:
         $$->add_sub($2);
         $$->add_sub($3);
     }
-    | IF LP Exp RP Stmt {
+    | IF LP Exp RP Stmt %prec LOWER_ELSE{
         $$ = new Node("Stmt", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
@@ -208,7 +224,11 @@ Stmt:
         $$->add_sub($4);
         $$->add_sub($5);
     }
-    | RETURN Exp error { std::cout << "Missing semicolon ';'\n"; }
+    | RETURN Exp error { error_info("Missing semicolon ';'"); }
+    | Exp error { error_info("Missing semicolon ';'"); }
+    | IF LP Exp error Stmt { error_info("Missing closing parenthesis ')'"); }
+    | IF LP Exp error Stmt ELSE Stmt {error_info("Missing closing parenthesis ')'");}
+    | WHILE LP Exp error Stmt {error_info("Missing closing parenthesis ')'");}
     ;
 /* local definition */
 DefList: {
@@ -228,6 +248,7 @@ Def:
         $$->add_sub($3);        
     }
     | error DecList SEMI {error_info("Missing specifier"); }
+    | Specifier DecList error { error_info("Missing semicolon ';'"); }
     ;
 DecList:
     Dec {
@@ -339,6 +360,7 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
     }
+    | LP Exp error {error_info("Missing closing parenthesis ')'");}
     | MINUS Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
@@ -356,12 +378,14 @@ Exp:
         $$->add_sub($3);
         $$->add_sub($4);
     }
+    | ID LP Args error {error_info("Missing closing parenthesis ')'");}
     | ID LP RP {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);        
     }
+    | ID LP error {error_info("Missing closing parenthesis ')'");}
     | Exp LB Exp RB {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
@@ -369,6 +393,7 @@ Exp:
         $$->add_sub($3);
         $$->add_sub($4);    
     }
+    | Exp LB Exp error {error_info("Missing closing bracket ']'");}
     | Exp DOT ID {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
@@ -401,7 +426,6 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
     }
-    | ID LP Args error { error_info("Missing closing parenthesis ')'"); }
     ;
 Args:
     Exp COMMA Args {
