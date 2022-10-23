@@ -14,6 +14,7 @@
         yycolno += yyleng;
 %}
 %option noyywrap
+%option yylineno
 letters                     [A-Za-z]
 letters_                    {letters}|_
 digit                       [0-9]
@@ -34,7 +35,7 @@ illegal_id_error            {digit}+{identifier}
     while(c!='\n'){c=yyinput();}
 }
 [\t\r ]+ {}
-"\n" {yycolno = 1; yylineno++;}
+"\n" {yycolno = 1;}
 "if" {
     yylval.node = new Node(true, "IF", "");
     return IF;
@@ -51,6 +52,10 @@ illegal_id_error            {digit}+{identifier}
 "while" {
     yylval.node = new Node(true, "WHILE", "");
     return WHILE;
+}
+"for" {
+    yylval.node = new Node(true, "FOR", "");
+    return FOR; 
 }
 "return" {
     yylval.node = new Node(true, "RETURN", "");

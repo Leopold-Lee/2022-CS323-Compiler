@@ -15,15 +15,22 @@
     Node* node;
 }
 %token INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN     
-%token GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC LT LE ERROR 
+%token GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC LT LE ERROR FOR
 
+%left ASSIGN
+%left OR 
+%left AND
+%left LT LE GT GE EQ NE
 %left PLUS MINUS 
 %left MUL DIV
+%right NOT
+%left LP RP LB RB DOT
+
 %nonassoc LOWER_ELSE      
 %nonassoc ELSE 
 
 %type<node> INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT      
-%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR 
+%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR FOR
 
 %type <node> Program ExtDefList ExtDef ExtDecList Specifier StructSpecifier VarDec
 %type <node> FunDec VarList ParamDec CompSt StmtList Stmt DefList Def DecList Dec Args Exp
@@ -223,6 +230,19 @@ Stmt:
         $$->add_sub($3);
         $$->add_sub($4);
         $$->add_sub($5);
+    }
+    | FOR LP Specifier Dec SEMI Exp SEMI Exp RP Stmt {
+        $$ = new Node("Stmt", @$.first_line);
+        $$->add_sub($1);
+        $$->add_sub($2);
+        $$->add_sub($3);
+        $$->add_sub($4);
+        $$->add_sub($5);
+        $$->add_sub($6);
+        $$->add_sub($7);
+        $$->add_sub($8);
+        $$->add_sub($9);
+        $$->add_sub($10);
     }
     | RETURN Exp error { error_info("Missing semicolon ';'"); }
     | Exp error { error_info("Missing semicolon ';'"); }
