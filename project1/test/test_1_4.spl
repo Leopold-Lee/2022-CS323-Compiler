@@ -1,0 +1,27 @@
+struct my_struct
+{
+    int a;
+    float b;
+};
+
+int main()
+{
+    int a = 0x321, b = 0X123;
+    int c, d;
+    c = a + b * a + b / a;
+    d = (a + b) * (a + b) / a;
+    if(c > 0) {
+        a = 0;
+    }
+    if(c < 0)
+    {
+        if(d > 0){
+            d = 1;
+        }
+        b = 0;
+    }
+    else
+    {
+        a = b;
+    }
+}

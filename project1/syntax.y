@@ -178,7 +178,7 @@ CompSt:
         $$->add_sub($3);
         $$->add_sub($4);
     }
-    /* | LC DefList StmtList error {error_info("Missing closing curly braces '}'");} */
+    /* | LC DefList StmtList error %prec LOWER_ERROR {error_info("Missing closing curly braces '}'");} */
     ;
 StmtList:{
     $$ = new Node();
@@ -492,4 +492,27 @@ void yyerror(const char *s){
 
 void error_info(std::string s){
     std::cerr << s << std::endl;
+}
+
+int main(int argc, char **argv) {
+    if (argc <= 1) {
+        fprintf(stderr, "no input path");
+        return 1;
+    } else if (argc > 2) {
+        fprintf(stderr, "too much input path");
+        return 1;
+    } else {
+        FILE *f = fopen(argv[1], "r");
+        if (!f) {
+            fprintf(stderr, "error of path %s", argv[1]);
+            return 1;
+        }
+        yyrestart(f);
+        /* yydebug = 1; */
+        yyparse();
+    }
+    if (isError == 0) {
+        traverse("", root);
+    }
+    return 0;
 }

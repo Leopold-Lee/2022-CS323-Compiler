@@ -15,9 +15,8 @@ CPP = $(GPP) $(CXX_FLAGS)
 .syntax:syntax.y
 	$(BISON) -t -d -v syntax.y
 splc: .lex .syntax
-	$(CPP) -c syntax.tab.c -o parser.o  -lfl -ly
-	@ar -rc libparser.a parser.o
-	$(CPP) main.cpp -static -L. -lparser -o splc
+	$(CPP) -c syntax.tab.c -o parser.o -lfl -ly
+	$(CPP) parser.o -o ./bin/splc
 	@rm -rf $(MAKE_PATH)/ lex.yy.c syntax.tab.* *.out *.o *.a *.so syntax.output
 clean:
 	@rm -rf $(MAKE_PATH)/ lex.yy.c syntax.tab.* *.out *.o *.a *.so syntax.output splc
