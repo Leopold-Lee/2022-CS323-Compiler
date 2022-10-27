@@ -1,6 +1,6 @@
 int test_1_3(int a, int b)
 {
-  int c = a && b || c;
+  int c = b || a && b;
   c = a == b;
   if (a > b)
   {

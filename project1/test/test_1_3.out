@@ -22,57 +22,90 @@ Program (1)
         RP
       CompSt (2)
         LC
-        StmtList (3)
-          Stmt (3)
-            IF
-            LP
-            Exp (3)
-              Exp (3)
-                ID: a
-              GT
-              Exp (3)
-                ID: b
-            RP
-            Stmt (4)
-              CompSt (4)
-                LC
-                StmtList (5)
-                  Stmt (5)
-                    RETURN
-                    Exp (5)
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE: int
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  ID: c
+                ASSIGN
+                Exp (3)
+                  Exp (3)
+                    ID: b
+                  OR
+                  Exp (3)
+                    Exp (3)
                       ID: a
-                    SEMI
-                RC
-            ELSE
-            Stmt (7)
+                    AND
+                    Exp (3)
+                      ID: b
+            SEMI
+        StmtList (4)
+          Stmt (4)
+            Exp (4)
+              Exp (4)
+                ID: c
+              ASSIGN
+              Exp (4)
+                Exp (4)
+                  ID: a
+                EQ
+                Exp (4)
+                  ID: b
+            SEMI
+          StmtList (5)
+            Stmt (5)
               IF
               LP
-              Exp (7)
-                Exp (7)
-                  ID: b
-                EQ
-                Exp (7)
+              Exp (5)
+                Exp (5)
                   ID: a
+                GT
+                Exp (5)
+                  ID: b
               RP
-              Stmt (7)
-                CompSt (7)
+              Stmt (6)
+                CompSt (6)
                   LC
-                  StmtList (8)
-                    Stmt (8)
+                  StmtList (7)
+                    Stmt (7)
                       RETURN
-                      Exp (8)
-                        ID: b
+                      Exp (7)
+                        ID: a
                       SEMI
                   RC
               ELSE
               Stmt (9)
-                CompSt (9)
-                  LC
-                  StmtList (10)
-                    Stmt (10)
-                      RETURN
-                      Exp (10)
-                        ID: b
-                      SEMI
-                  RC
+                IF
+                LP
+                Exp (9)
+                  Exp (9)
+                    ID: b
+                  EQ
+                  Exp (9)
+                    ID: a
+                RP
+                Stmt (9)
+                  CompSt (9)
+                    LC
+                    StmtList (10)
+                      Stmt (10)
+                        RETURN
+                        Exp (10)
+                          ID: b
+                        SEMI
+                    RC
+                ELSE
+                Stmt (11)
+                  CompSt (11)
+                    LC
+                    StmtList (12)
+                      Stmt (12)
+                        RETURN
+                        Exp (12)
+                          ID: b
+                        SEMI
+                    RC
         RC

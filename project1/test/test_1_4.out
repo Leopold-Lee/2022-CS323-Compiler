@@ -46,7 +46,7 @@ Program (1)
                     ID: a
                   ASSIGN
                   Exp (9)
-                    INT: 801
+                    INT: 0x321
                 COMMA
                 DecList (9)
                   Dec (9)
@@ -54,7 +54,7 @@ Program (1)
                       ID: b
                     ASSIGN
                     Exp (9)
-                      INT: 291
+                      INT: 0X123
               SEMI
             DefList (10)
               Def (10)
