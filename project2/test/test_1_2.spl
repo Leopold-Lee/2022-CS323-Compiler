@@ -1,6 +1,0 @@
-int test_1_2()
-{
-    int 111_go;
-    float id_3;
-    return 0
-}

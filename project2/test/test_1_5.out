@@ -1,5 +1,0 @@
-Error type B at Line 1: Missing closing parenthesis ')'
-Error type A at Line 3: unknown lexeme 0x0123
-Error type B at Line 3: Missing semicolon ';'
-Error type B at Line 4: Missing specifier
-Error type B at Line 6: Missing closing parenthesis ')'
