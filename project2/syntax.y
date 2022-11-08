@@ -1,5 +1,7 @@
 %{
     #include "lex.yy.c"
+    #include "semantic_check.hpp"
+    #include <unordered_map> //hash_map
     #include <iostream>
     void yyerror(const char *s);
     void error_info(std::string s);
@@ -8,6 +10,7 @@
     Node* root;
     extern int isError;
     #define PARSER_error_OUTPUT stdout
+    std::unordered_map<std::string, Variable *> variable_map;
     //yydebug = 1;
 %}
 %locations
@@ -266,6 +269,11 @@ Def:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);        
+        
+        std::string type = $1->sub_nodes[0]->value;
+        def_variable($2);
+        assign_type(type, $2);
+    
     }
     | error DecList SEMI {error_info("Missing specifier"); }
     | Specifier DecList error { error_info("Missing semicolon ';'"); }
@@ -412,6 +420,10 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);    
+        
+        if(!array_index_check($1)) std::cout << "Type 10 error at line " << @$.first_line << " applying indexing operator ([...]) on non-array type variables\n";
+        if(!check_is_int($3)) std::cout << "Type 12 error at line " << @$.first_line << " array indexing with a non-integer type expression\n";
+        
     }
     | Exp LB Exp error {error_info("Missing closing bracket ']'");}
     | Exp DOT ID {
@@ -511,8 +523,12 @@ int main(int argc, char **argv) {
         /* yydebug = 1; */
         yyparse();
     }
-    if (isError == 0) {
-        traverse("", root);
+    for ( auto var = variable_map.begin(); var != variable_map.end(); ++var)
+    {
+        std::cout << var->first << ": " << var->second->t << " is_array: " << var->second->is_array << std::endl;
     }
+    /* if (isError == 0) {
+        traverse("", root);
+    } */
     return 0;
 }

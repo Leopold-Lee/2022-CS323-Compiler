@@ -1,17 +1,8 @@
+#pragma once
 #include <string>
 #include <iostream>
 #include <vector>
-#include <functional>
 
-enum class Node_TYPE {
-    LINE,
-    NAME,
-    STRING,
-    CHAR,
-    INT,
-    FLOAT,
-    NOTHING
-};
 using namespace std;
 class Node {
 public:
