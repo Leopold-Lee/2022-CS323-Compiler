@@ -63,6 +63,11 @@ ExtDef:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        if ($1->sub_nodes[0]->name.compare("TYPE") == 0) {
+            std::string type = $1->sub_nodes[0]->value;
+            def_variable($2);
+            assign_type(type, $2, false);
+        } 
     }
     | Specifier SEMI { //define struct
         $$ = new Node("ExtDef", @$.first_line);
