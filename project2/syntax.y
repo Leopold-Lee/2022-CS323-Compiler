@@ -365,6 +365,7 @@ Exp:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        check_rvalue($$, @$.first_line);
         v_type t1 = $1->at;
         v_type t2 = $3->at;
         if (t1.type != t2.type || t1.struct_name != t2.struct_name || t1.array_dim != t2.array_dim)
