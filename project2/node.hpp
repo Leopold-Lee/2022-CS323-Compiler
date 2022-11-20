@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include "variable.hpp"
 
 using namespace std;
 class Node {
@@ -13,6 +14,8 @@ public:
     int line_num;
     bool is_terminal  = true;
     bool is_empty = false;
+    v_type at;
+    // attributes at;
 
     Node(bool is_key, string name, string value)
     {

@@ -11,6 +11,8 @@
     extern int isError;
     #define PARSER_error_OUTPUT stdout
     std::unordered_map<std::string, Variable *> variable_map;
+    std::unordered_map<std::string, Function*> function_map;
+    std::unordered_map<std::string, my_struct*> struct_map;
     //yydebug = 1;
 %}
 %locations
@@ -56,22 +58,31 @@ ExtDefList: {
     }
     ;
 ExtDef:
-    Specifier ExtDecList SEMI {
+    Specifier ExtDecList SEMI { //define global variables
         $$ = new Node("ExtDef", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
     }
-    | Specifier SEMI {
+    | Specifier SEMI { //define struct
         $$ = new Node("ExtDef", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
     }
-    | Specifier FunDec CompSt {
+    | Specifier FunDec CompSt { //define functions
         $$ = new Node("ExtDef", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        std::string fun_name = $2->sub_nodes[0]->value;
+        if (function_map.count(fun_name)) {
+            semantic_error(4, $$->line_num, fun_name);
+        }
+        else{
+            Function *fun = new Function(fun_name, $1, $2);
+            function_map[fun_name] = fun;
+            check_return(fun->return_type, $3);
+        }
     }
     |  Specifier ExtDecList error {error_info("Missing semicolon ';'");}
     |  Specifier error {error_info("Missing semicolon ';'");}
@@ -94,10 +105,22 @@ Specifier:
     TYPE {
         $$ = new Node("Specifier", @$.first_line);
         $$->add_sub($1);
+        string type = $1->value;
+        if (type.compare("int") == 0) {
+            $$->at.type = TYPE_INT;
+        }
+        else if (type.compare("char") == 0) {
+            $$->at.type = TYPE_CHAR;
+        }
+        else if (type.compare("float") == 0) {
+            $$->at.type = TYPE_FLOAT;
+        }
     }
     | StructSpecifier {
         $$ = new Node("Specifier", @$.first_line);
         $$->add_sub($1);        
+        $$->at.type = TYPE_STRUCT;
+        $$->at.struct_name = $1->at.struct_name;
     }
     ;
 StructSpecifier: 
@@ -108,11 +131,21 @@ StructSpecifier:
         $$->add_sub($3);  
         $$->add_sub($4);  
         $$->add_sub($5);  
+        my_struct* stc = new my_struct($2->value);
+        if(struct_map.count($2->value)) {
+            semantic_error(15, $$->line_num, $2->value);
+            // std::cout << "Error type 15 at Line " << $$.line_num << ": redefine struct: "<< $2->value << std::endl;
+        }
+        else {
+            struct_map[$2->value] = stc;
+            def_struct(stc, $4);
+        }
     }
     | STRUCT ID {
         $$ = new Node("StructSpecifier", @$.first_line);
         $$->add_sub($1);  
         $$->add_sub($2);  
+        $$->at.struct_name = $2->value;
     }
     | STRUCT ID LC DefList error {error_info("Missing closing curly braces '}'");}
     | STRUCT ID DefList RC error {error_info("Missing beginning curly braces '{'");}
@@ -170,6 +203,17 @@ ParamDec:
         $$ = new Node("ParamDec", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
+
+        if ($1->sub_nodes[0]->name.compare("TYPE") == 0) {
+            std::string type = $1->sub_nodes[0]->value;
+            def_variable($2);
+            assign_type(type, $2, false);
+        } 
+        else {
+            std::string struct_type = $1->sub_nodes[0]->sub_nodes[1]->value;
+            def_variable($2);
+            assign_type(struct_type, $2, true);
+        }
     }
     ;
 /* statement */
@@ -270,9 +314,16 @@ Def:
         $$->add_sub($2);
         $$->add_sub($3);        
         
-        std::string type = $1->sub_nodes[0]->value;
-        def_variable($2);
-        assign_type(type, $2);
+        if ($1->sub_nodes[0]->name.compare("TYPE") == 0) {
+            std::string type = $1->sub_nodes[0]->value;
+            def_variable($2);
+            assign_type(type, $2, false);
+        } 
+        else {
+            std::string struct_type = $1->sub_nodes[0]->sub_nodes[1]->value;
+            def_variable($2);
+            assign_type(struct_type, $2, true);
+        }
     
     }
     | error DecList SEMI {error_info("Missing specifier"); }
@@ -309,6 +360,13 @@ Exp:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        v_type t1 = $1->at;
+        v_type t2 = $3->at;
+        if (t1.type != t2.type || t1.struct_name != t2.struct_name || t1.array_dim != t2.array_dim)
+        {
+            semantic_error(5, $$->line_num, "");
+            // std::cout << "Type 5 error at line: " << $$->line_num << " unmatching types appear at both sides of the assignment operatot" << std::endl;
+        }
     }
     | Exp AND Exp {
         $$ = new Node("Exp", @$.first_line);
@@ -363,41 +421,60 @@ Exp:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at = $1->at;
+        if ($1->at.type != $3->at.type) {
+            semantic_error(7, $$->line_num, "");
+        }
     }
     | Exp MINUS Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at = $1->at;
+        if ($1->at.type != $3->at.type) {
+            semantic_error(7, $$->line_num, "");
+        }
     }
     | Exp MUL Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at = $1->at;
+        if ($1->at.type != $3->at.type) {
+            semantic_error(7, $$->line_num, "");
+        }
     }
     | Exp DIV Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at = $1->at;
+        if ($1->at.type != $3->at.type) {
+            semantic_error(7, $$->line_num, "");
+        }
     }
     | LP Exp RP {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at = $2->at;
     }
     | LP Exp error {error_info("Missing closing parenthesis ')'");}
     | MINUS Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
+        $$->at = $2->at;
     }
     | NOT Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
+        $$->at = $2->at;
     }
     | ID LP Args RP {
         $$ = new Node("Exp", @$.first_line);
@@ -405,13 +482,50 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);
+        if (variable_map.count($1->value)) {
+            semantic_error(11, $$->line_num, "");
+            // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
+        }
+        else{
+            if (function_map.count($1->value)) {
+                Function* fun = function_map[$1->value];
+                v_type* t = fun->return_type;
+                $$->at.type = t->type;
+                $$->at.struct_name = t->struct_name;
+                $$->at.array_dim = t->array_dim;
+                check_fun($1, $3);
+            }
+            else {
+                semantic_error(2, $$->line_num, $1->value);
+                // cout << "Type 11 error at line " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
+            }
+        }
     }
     | ID LP Args error {error_info("Missing closing parenthesis ')'");}
     | ID LP RP {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
-        $$->add_sub($3);        
+        $$->add_sub($3);      
+        check_fun($1, NULL);  
+        if (variable_map.count($1->value)) {
+            semantic_error(11, $$->line_num, "");
+            // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
+        }
+        else {
+            if (function_map.count($1->value)) {
+                Function* fun = function_map[$1->value];
+                v_type* t = fun->return_type;
+                $$->at.type = t->type;
+                $$->at.struct_name = t->struct_name;
+                $$->at.array_dim = t->array_dim;
+                check_fun($1, $3);
+            }
+            else {
+                semantic_error(2, $$->line_num, $1->value);
+                // cout << "Type 11 error at line " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
+            }
+        }
     }
     | ID LP error {error_info("Missing closing parenthesis ')'");}
     | Exp LB Exp RB {
@@ -420,9 +534,18 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);    
-        
-        if(!array_index_check($1)) std::cout << "Type 10 error at line " << @$.first_line << " applying indexing operator ([...]) on non-array type variables\n";
-        if(!check_is_int($3)) std::cout << "Type 12 error at line " << @$.first_line << " array indexing with a non-integer type expression\n";
+        if ($1->at.array_dim <= 0) {
+            semantic_error(10, $$->line_num, "");
+            // std::cout << "Type 10 error at line " << @$.first_line << " applying indexing operator ([...]) on non-array type variables\n";
+        }
+        if ($3->at.type != TYPE_INT){
+            semantic_error(12, $$->line_num, "");
+            // std::cout << "Type 12 error at line " << @$.first_line << " array indexing with a non-integer type expression\n";
+        }
+        v_type t = $1->at;
+        $$->at.type = t.type;
+        $$->at.struct_name = t.struct_name;
+        $$->at.array_dim = t.array_dim - 1;
         
     }
     | Exp LB Exp error {error_info("Missing closing bracket ']'");}
@@ -430,23 +553,50 @@ Exp:
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
-        $$->add_sub($3);        
+        $$->add_sub($3);
+        v_type t = $1->at;
+        if (t.array_dim == 0 && struct_map.count(t.struct_name)) {
+            v_type *temp = check_struct_member(struct_map[t.struct_name], $3->value, $$->line_num);
+            if (temp) {
+                $$->at.type = temp->type;
+                $$->at.struct_name = temp->struct_name;
+                $$->at.array_dim = temp->array_dim;
+            }
+        }
+        else {
+            semantic_error(13, $$->line_num, "");
+            // std::cout << "Type 13 error: at line " << $$->line_num << " accessing members of a non-structure variable" << std::endl;
+        }
     }
     | ID {
         $$ = new Node("Exp", @$.first_line);
-        $$->add_sub($1);        
+        $$->add_sub($1);
+        if (variable_map.count($1->value)) {
+            v_type* t = variable_map[$1->value]->t;
+            $$->at.type = t->type;
+            $$->at.struct_name = t->struct_name;
+            $$->at.array_dim = t->array_dim;
+        }
+        else {
+            $$->at.type = TYPE_UNKNOW;
+            semantic_error(1, $$->line_num, $1->value);
+            // cout << "Error type 1 at Line "<< $$->line_nume << ": undefined variable: "<< $1->value << std::endl; 
+        }
     }
     | INT {
         $$ = new Node("Exp", @$.first_line); 
         $$->add_sub($1);
+        $$->at.type = TYPE_INT;
     }
     | FLOAT {
         $$ = new Node("Exp", @$.first_line); 
         $$->add_sub($1);    
+        $$->at.type = TYPE_FLOAT;
     }
     | CHAR {
         $$ = new Node("Exp", @$.first_line); 
         $$->add_sub($1);
+        $$->at.type = TYPE_CHAR;
     }
     | ERROR {
         $$ = new Node("Exp", @$.first_line); 
@@ -473,7 +623,6 @@ Args:
     ;
 
 %%
-
 void traverse(string tab, Node* root) {
     if(root->is_empty) return;
     vector<Node*> subs = root->sub_nodes;
@@ -489,7 +638,12 @@ void traverse(string tab, Node* root) {
         }
     }
     else{
-        std::cout << root->name << " (" << root -> line_num << ")" << std::endl;
+        std::cout << root->name << " (" << root -> line_num << ")";
+        if (root->name.compare("Exp") == 0) {
+            v_type t = root->at;
+            std::cout << t.type << " " << t.struct_name << " " << t.array_dim;
+        }
+        std::cout << std::endl;
     }
     tab = tab + "  ";
     for(Node* n : subs){
@@ -523,10 +677,33 @@ int main(int argc, char **argv) {
         /* yydebug = 1; */
         yyparse();
     }
+    /* std::cout << "traversal variable map:\n";
     for ( auto var = variable_map.begin(); var != variable_map.end(); ++var)
     {
-        std::cout << var->first << ": " << var->second->t << " is_array: " << var->second->is_array << std::endl;
+        std::cout << var->first << ": " << var->second->t->type << " is_array: " << var->second->t->array_dim << std::endl;
     }
+    std::cout << "traversal function map:\n";
+    for ( auto var = function_map.begin(); var != function_map.end(); ++var)
+    {
+        Function * fun = var->second;
+        std::cout << var->first << ": return type:" << fun->return_type->type;
+        for(v_type* t: fun->parameters)
+        {
+            std::cout << " parameter" << " type:" << t->type;
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "traversal struct map:\n";
+    for ( auto var = struct_map.begin(); var != struct_map.end(); ++var)
+    {
+        my_struct* stc = var->second;
+        std::cout << var->first;
+        for(Variable* v: stc->variables)
+        {
+            std::cout << " " << v->name << " type:" << v->t->type;
+        }
+        std::cout << std::endl;
+    } */
     /* if (isError == 0) {
         traverse("", root);
     } */

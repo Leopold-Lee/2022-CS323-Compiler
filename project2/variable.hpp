@@ -1,18 +1,40 @@
 #pragma once
 #include <string>
 using namespace std;
-enum TYPE_T {TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_UNKNOW};
+enum TYPE_T {TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_UNKNOW, TYPE_STRUCT};
+
+class v_type
+{
+public:
+    TYPE_T type;
+    string struct_name = "";
+    int array_dim = 0;
+    v_type() {
+        this->type = TYPE_UNKNOW;
+    }
+    v_type(TYPE_T t) {
+        this->type = t; 
+    }
+    v_type(string stc) {
+        this->type = TYPE_STRUCT;
+        this->struct_name = stc;
+    }
+    // v_type(const v_type& vt) {
+    //     this->type = vt.type;
+    //     this->struct_name = vt.struct_name;
+    //     this->array_dim = vt.array_dim;
+    // }
+};
+
 class Variable
 {
 public:
     string name;
-    TYPE_T t = TYPE_UNKNOW;
-    bool is_array = 0;
-    int array_dimension;
-    bool is_struct = 0;
-    string struct_name;
+    v_type* t;
     Variable(string name){
+        this->t = new v_type(TYPE_UNKNOW);
         this->name = name;
     }
     ~Variable(){}
 };
+

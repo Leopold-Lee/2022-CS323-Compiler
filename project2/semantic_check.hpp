@@ -8,29 +8,60 @@ extern std::unordered_map<std::string, Variable *> variable_map;
 extern std::unordered_map<std::string, Function*> function_map;
 extern std::unordered_map<std::string, my_struct*> struct_map;
 
-bool array_index_check(Node *check) {
-    Node *temp = check;
-    int dimension = 0;
-    while(!temp->sub_nodes.empty()) {
-        dimension ++;
-        temp = temp->sub_nodes[0];
+void semantic_error(int i, int line, string content) {
+    cout << "Error type "<< i << " at Line " << line << ": ";
+    switch(i){
+        case 1:
+            cout << "undefined variable: " << content;
+        break;
+        case 2:
+            cout << "undefined function: " << content;
+        break;
+        case 3:
+            cout << "redefine variable: " << content;
+        break;
+        case 4:
+            cout << "redefine function: " << content;
+        break;
+        case 5:
+            cout << "unmatching type on both sides of assignment";
+        break;
+        case 6:
+            cout << "left side in assignment is rvalue";
+        break;
+        case 7:
+            cout << "binary operation on non-number variables";
+        break;
+        case 8:
+            cout << "incompatiable return type";
+        break;
+        case 9:
+            cout << "invalid argument number for compare, expect 2, got 3";
+        break;
+        case 10:
+            cout << "indexing on non-array variable";
+        break;
+        case 11:
+            cout << "invoking non-function variable: " << content;
+        break;
+        case 12:
+            cout << "indexing by non-integer";
+        break;
+        case 13:
+            cout << "accessing with non-struct variable";
+        break;
+        case 14:
+            cout << "no such member: " << content;
+        break;
+        case 15:
+            cout << "redefine struct: " << content;
+        break;
     }
-    if(dimension && temp->name.compare("ID") == 0) {
-        // std::cout << temp->name << std::endl;
-        // std::cout << "is id\n";
-        if(variable_map.count(temp->value)){
-            // std::cout << "exsit variable\n";
-            Variable *variable = variable_map[temp->value];
-            if (variable->is_array && variable->array_dimension >= dimension)
-            {
-                return true;
-                // std::cout << "is array\n";
-            }
-        }
-    }
-    return false;
+    cout << endl;
 }
-///////////////////////////////////////
+
+
+
 void def_variable(Node *node) {
     for(Node *sub : node->sub_nodes)
     {
@@ -42,7 +73,8 @@ void def_variable(Node *node) {
             std::string variable_name = temp->value;
             if(variable_map.count(variable_name))
             {
-                std::cout << "variable redefined\n"; 
+                semantic_error(3, node->line_num, variable_name);
+                // std::cout << "variable redefined\n"; 
             }
             else{
                 Variable* new_variable = new Variable(variable_name);
@@ -59,9 +91,7 @@ void def_variable(Node *node) {
             if(dimension && temp->name.compare("ID") == 0){
                 std::string variable_name = temp->value;
                 Variable* variable = variable_map[variable_name];
-                variable->is_array = true;
-                variable->array_dimension = dimension;
-                // std::cout << variable->name << " " << variable->is_array << std::endl;
+                variable->t->array_dim = dimension;
             }
         }
     }
@@ -70,23 +100,28 @@ void def_variable(Node *node) {
 
 
 void assign_type(std::string type, Node * dec, bool is_struct) {
-    if(dec->name.compare("ID") == 0) {
-        std::string name = dec->value;
+    if(dec->name.compare("VarDec") == 0) {
+        Node* temp = dec;
+        while(!temp->sub_nodes.empty())
+        {
+            temp = temp->sub_nodes[0];
+        }
+        std::string name = temp->value;
         if (!is_struct) {
             if (type.compare("int") == 0) {
-                variable_map[name]->t = TYPE_T::TYPE_INT;
+                variable_map[name]->t->type = TYPE_T::TYPE_INT;
             }
             else if (type.compare("char") == 0) {
-                variable_map[name]->t = TYPE_T::TYPE_CHAR;
+                variable_map[name]->t->type = TYPE_T::TYPE_CHAR;
             }
             else if (type.compare("float") == 0) {
-                variable_map[name]->t = TYPE_T::TYPE_FLOAT;
+                variable_map[name]->t->type = TYPE_T::TYPE_FLOAT;
             }
         }
         else {
             Variable * var = variable_map[name];
-            var->is_struct = true;
-            var->struct_name = type;
+            var->t->type = TYPE_STRUCT;
+            var->t->struct_name = type;
         }
         return;
     }
@@ -96,40 +131,18 @@ void assign_type(std::string type, Node * dec, bool is_struct) {
     }
 }
 
-bool check_is_type(TYPE_T type, Node* exp) {
-    bool is_type = true;
-    if(exp->is_terminal) {
-        if(exp->name.compare("ID") == 0) {
-            std::string name = exp->value;
-            Variable* var = variable_map[name];
-            if(!(var->t == type)) is_type = false;
-        }
-        else if(exp->name.compare("INT") == 0) {
-            if(!(type == TYPE_INT)) is_type = false;
-        }
-        else if(exp->name.compare("FLOAT") == 0) {
-            if(!(type == TYPE_FLOAT)) is_type = false;
-        }
-        else if(exp->name.compare("CHAR") == 0) {
-            if(!(type == TYPE_CHAR)) is_type = false;
-        }
-    }
-    vector<Node*> subs = exp->sub_nodes;
-    for(Node* n : subs){
-        if(!check_is_type(type, n)) {
-            is_type = false;
-        }
-    }
-    return is_type;
-}
-
-void check_return(TYPE_T return_type, Node* stmt)
+void check_return(v_type* return_type, Node* stmt)
 {
     if(stmt->name.compare("Stmt") == 0) {
         if (stmt->sub_nodes[0]->name.compare("RETURN") == 0) {
-            bool match = check_is_type(return_type, stmt->sub_nodes[1]);
+            // bool match = check_is_type(return_type, stmt->sub_nodes[1]);
+            Node* exp = stmt->sub_nodes[1];
+            bool match = exp->at.type == return_type->type;
+            if (match && return_type->type == TYPE_STRUCT) {
+                match = exp->at.struct_name.compare(return_type->struct_name)==0;
+            }
             // cout << "return type matched: " << match << endl;
-            if (!match) cout << "Type 8 error: a function’s return value type mismatches the declared type" << endl;
+            if (!match) semantic_error(8, stmt->line_num, ""); //cout << "Type 8 error at line " << stmt->line_num << ": a function’s return value type mismatches the declared type" << endl;
         }
     }
     vector<Node*> subs = stmt->sub_nodes;
@@ -138,43 +151,10 @@ void check_return(TYPE_T return_type, Node* stmt)
     }
 }
 
-
-TYPE_T get_exp_type(Node* exp) {
-    TYPE_T type = TYPE_UNKNOW;
-    if(exp->is_terminal) {
-        if(exp->name.compare("ID") == 0) {
-            std::string name = exp->value;
-            Variable* var = variable_map[name];
-            type = var->t;
-        }
-        else if(exp->name.compare("INT") == 0) {
-            type = TYPE_INT;
-        }
-        else if(exp->name.compare("FLOAT") == 0) {
-            type = TYPE_FLOAT;
-        }
-        else if(exp->name.compare("CHAR") == 0) {
-            type = TYPE_CHAR;
-        }
-    }
-    vector<Node*> subs = exp->sub_nodes;
-    for(Node* n : subs){
-        TYPE_T temp = get_exp_type(n);
-        // type = get_exp_type(n);
-        if(type == TYPE_UNKNOW) type = temp;
-        else {
-            if (temp != TYPE_UNKNOW && temp != type) cout << "Exp type mismatch" << endl;
-        }
-    }
-    return type;
-}
-
-//handle array and struct
-
-void get_type(vector<TYPE_T> & type, Node* args) {
+void get_type(vector<v_type> & type, Node* args) {
     if(args->name.compare("Exp") == 0) {
-        TYPE_T exp_type = get_exp_type(args);
-        type.push_back(exp_type);
+        // TYPE_T exp_type = get_exp_type(args);
+        type.push_back(args->at);
     }
     else {
         vector<Node*> subs = args->sub_nodes;
@@ -186,39 +166,41 @@ void get_type(vector<TYPE_T> & type, Node* args) {
 
 void check_fun(Node *id, Node* args) {
     if (!function_map.count(id->value)) {
-        cout << "Type 11 error: applying function invocation operator (foo(...)) on non-function names" << endl;
+        // cout << "Type 11 error at line " << args->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
     }
     else {
-        vector<TYPE_T> args_type;
+        vector<v_type> args_type;
         if (args) get_type(args_type, args);
         Function *fun = function_map[id->value];
-        vector<TYPE_T> fun_type = fun->parameters;
-        // cout << args_type.size() << endl;
+        vector<v_type*> fun_type = fun->parameters;
         if(args_type.size() == fun_type.size()) {
             for (size_t i = 0; i < args_type.size(); i++)
             {
                 // cout << args_type[i] << endl;
-                if(args_type[i] != fun_type[i]) {
-                    cout << "Type 9 a function’s arguments mismatch the declared parameters" << endl;
+                if(args_type[i].type != fun_type[i]->type || args_type[i].struct_name.compare(fun_type[i]->struct_name) != 0 || args_type[i].array_dim != fun_type[i]->array_dim) {
+                    cout << "Type 9 at line " << args->line_num << " a function’s arguments mismatch the declared parameters" << endl;
                     break;
                 }
             }
         }
-        else cout << "Type 9 a function’s arguments mismatch the declared parameters" << endl;
+        else cout << "Type 9 at line " << args->line_num << " a function’s arguments mismatch the declared parameters" << endl;
     }
 }
 
-void def_struct_type(my_struct* stc, TYPE_T type, Node* node) {
+void def_struct_type(my_struct* stc, TYPE_T type, string struct_name, Node* node) {
     for(Node *sub : node->sub_nodes)
     {
-        def_struct_type(stc, type, sub);
+        def_struct_type(stc, type, struct_name, sub);
     }
     if(node->name.compare("VarDec")==0) {
         Node* temp = node->sub_nodes[0];
         if(temp->name.compare("ID")==0) {
             std::string variable_name = temp->value;
             Variable* new_variable = new Variable(variable_name);
-            new_variable->t = type;
+            new_variable->t->type = type;
+            if (type == TYPE_STRUCT) {
+                new_variable->t->struct_name = struct_name;
+            }
             stc->variables.push_back(new_variable);
             // variable_map[variable_name] = new_variable;
         }
@@ -234,8 +216,7 @@ void def_struct_type(my_struct* stc, TYPE_T type, Node* node) {
                 for (Variable *var : stc->variables)
                 {
                     if (var->name.compare(variable_name) == 0) {
-                        var->is_array = true;
-                        var->array_dimension = dimension;
+                        var->t->array_dim = dimension;
                     }
                 }
             }
@@ -262,36 +243,28 @@ void def_struct(my_struct* stc, Node* node) {
             else if (type.compare("float") == 0) {
                 var_type = TYPE_FLOAT;
             }
-            def_struct_type(stc, var_type, node->sub_nodes[1]);
+            def_struct_type(stc, var_type, "", node->sub_nodes[1]);
+        }
+        else {
+            string struct_name = specifier->sub_nodes[1]->value;
+            def_struct_type(stc, TYPE_STRUCT, struct_name, node->sub_nodes[1]);
         }
         return;
     }
 }
 
-void check_struct_member(Node* exp, Node* ID) {
-    Node *temp = exp->sub_nodes[0];
-    if (temp->name.compare("ID") == 0) {
-        string name = temp->value;
-        // cout << name;
-        if (variable_map.count(name)) {
-            string stc_name = variable_map[name]->struct_name;
-            // cout << stc_name;
-            if (struct_map.count(stc_name)) {
-                bool has_member = false;
-                my_struct* stc = struct_map[stc_name];
-                for(Variable * var: stc->variables) {
-                    if(var->name.compare(ID->value) == 0) {
-                        has_member = true;
-                    }
-                }
-                if (!has_member) {
-                    cout << "Type 14 error: accessing an undefined structure member" << endl;
-                }
-            }
-            else {
-                cout << "Type 13 error: accessing members of a non-structure variable" << endl;
-            }
+v_type* check_struct_member(my_struct* stc, string member, int line) {
+    bool has_member = false;
+    // my_struct* stc = struct_map[stc_name];
+    for(Variable * var: stc->variables) {
+        if(var->name.compare(member) == 0) {
+            has_member = true;
+            return var->t;
         }
-        
     }
+    if (!has_member) {
+        semantic_error(14, line, member);
+        // cout << "Type 14 error: at line " << line << " accessing an undefined structure member" << endl;
+    }
+    return NULL;
 }

@@ -8,23 +8,13 @@ class Function
 {
 public:
     string name;
-    TYPE_T return_type;
-    vector<TYPE_T> parameters; 
+    v_type* return_type;
+    vector<v_type*> parameters; 
     Function(string name, Node* specifier, Node* funDec){
         this->name = name;
-        Node* temp = specifier->sub_nodes[0];
-        if(temp->name.compare("TYPE") == 0) {
-            string type = temp->value;
-            if (type.compare("int") == 0) {
-            this->return_type = TYPE_T::TYPE_INT;
-            }
-            else if (type.compare("char") == 0) {
-                this->return_type = TYPE_T::TYPE_CHAR;
-            }
-            else if (type.compare("float") == 0) {
-                this->return_type = TYPE_T::TYPE_FLOAT;
-            }
-        }
+        v_type rt = specifier->at;
+        return_type = new v_type(rt.type);
+        return_type->struct_name = rt.struct_name;
         addParameters(funDec);
     }
     void addParameters(Node* node) {
@@ -33,19 +23,10 @@ public:
             addParameters(sub);
         }
         if(node->name.compare("Specifier")==0) {
-            Node *temp = node->sub_nodes[0];
-            if(temp->name.compare("TYPE") == 0) {
-                string type = temp->value;
-                if (type.compare("int") == 0) {
-                    parameters.push_back(TYPE_T::TYPE_INT);
-                }
-                else if (type.compare("char") == 0) {
-                    parameters.push_back(TYPE_T::TYPE_CHAR);
-                }
-                else if (type.compare("float") == 0) {
-                    parameters.push_back(TYPE_T::TYPE_FLOAT);
-                }
-            }
+            v_type pt = node->at;
+            v_type *para = new v_type(pt.type);
+            para->struct_name = pt.struct_name;
+            parameters.push_back(para);
         }
     }
 
