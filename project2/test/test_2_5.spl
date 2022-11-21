@@ -1,0 +1,11 @@
+float add(float x,float y){
+  return x+y;
+}
+int foo()
+{
+  float a = 0.5;
+  float b = 0.5;
+  int k;
+  k = add(a,b);
+  return a;
+}

@@ -275,6 +275,6 @@ void check_rvalue(Node *node, int line) {
     if (!(size == 1 && left_node->sub_nodes[0]->name == "ID" || 
         size == 3 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "DOT" && left_node->sub_nodes[2]->name == "ID" ||
         size == 4 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "LB" && left_node->sub_nodes[2]->name == "Exp" && left_node->sub_nodes[3]->name == "RB")) {
-        cout << "Type 6 error: at line " << line << " rvalue appears on the left-hand side of the assignment operator" << endl;
+        semantic_error(6, line, "");
     } 
 }

@@ -1,0 +1,3 @@
+Error type 15 at Line 10: redefine struct: node
+Error type 9 at Line 18: invalid argument number for sum, expect 2, got 3
+Error type 5 at Line 19: unmatching type on both sides of assignment

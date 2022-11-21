@@ -1,0 +1,16 @@
+int foo()
+{
+  int a = 10;
+  a = bar();
+  return 0;
+}
+
+int bar() {
+    float d = 0;
+    return 0;
+}
+
+int bar(int b) {
+    b = b + 1;
+    return b;
+}

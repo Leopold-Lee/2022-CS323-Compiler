@@ -1,0 +1,21 @@
+int sum(int x, int y){
+    return x+y;
+}
+
+struct node{
+    int a;
+    float b;
+};
+
+struct node{
+    int value;
+    struct node next;
+};
+
+int test()
+{
+  int x1 = 5;
+  int x4 = sum(x1,x1,x1);
+  x1 = 1.2;
+  return 0;
+}
