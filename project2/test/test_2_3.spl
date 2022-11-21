@@ -1,11 +1,14 @@
+struct Test {
+  int member;
+} test;
 int foo()
 {
   int a = 10;
-  a + 1 = 2;
-  3 = 2;
-
   float x1 = 0.5;
   float x3[10];
+  a + 1 = 2;
+  3 = 2;
   x3[x1] = x1;
+  x3[test.member + a + 1] = 0.1;
   return 0;
 }

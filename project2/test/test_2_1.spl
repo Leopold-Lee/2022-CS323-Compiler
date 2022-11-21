@@ -2,7 +2,7 @@ int foo()
 {
   int a = 10;
   int b = 11 + c;
-  6 = a;
   float a = 1.0;
+  6 = a;
   return c;
 }

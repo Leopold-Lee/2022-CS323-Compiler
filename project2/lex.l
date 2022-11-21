@@ -21,7 +21,7 @@ digit                       [0-9]
 digit_hex                   [0-9a-fA-F]
 int                         (0|([1-9]{digit}*))
 int_hex                     0[xX](0|[1-9a-fA-F]{digit_hex}*)
-float                       [+-]?{int}\.{digit}+
+float                       {int}\.{digit}+
 identifier                  {letters_}({letters_}|{digit})*
 char                        '.'
 char_hex                    '\\x(0|[1-9a-fA-F]{digit_hex})'

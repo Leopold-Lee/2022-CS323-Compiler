@@ -1,5 +1,9 @@
+float one() {
+  return 0.1 + 0.1;
+}
+
 float add(float x,float y){
-  return x+y;
+  return x+y+one();
 }
 int foo()
 {

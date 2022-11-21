@@ -30,13 +30,13 @@ void semantic_error(int i, int line, string content) {
             cout << "left side in assignment is rvalue";
         break;
         case 7:
-            cout << "binary operation on non-number variables";
+            cout << "unmatching operands";
         break;
         case 8:
             cout << "incompatiable return type";
         break;
         case 9:
-            cout << "invalid argument number for compare, expect 2, got 3";
+            cout << "a function’s arguments mismatch the declared parameters";
         break;
         case 10:
             cout << "indexing on non-array variable";
@@ -178,12 +178,13 @@ void check_fun(Node *id, Node* args) {
             {
                 // cout << args_type[i] << endl;
                 if(args_type[i].type != fun_type[i]->type || args_type[i].struct_name.compare(fun_type[i]->struct_name) != 0 || args_type[i].array_dim != fun_type[i]->array_dim) {
-                    cout << "Type 9 at line " << args->line_num << " a function’s arguments mismatch the declared parameters" << endl;
+                    semantic_error(9, args->line_num, "");
+                    // cout << "Type 9 at line " << args->line_num << ": a function’s arguments mismatch the declared parameters" << endl;
                     break;
                 }
             }
         }
-        else cout << "Type 9 at line " << args->line_num << " a function’s arguments mismatch the declared parameters" << endl;
+        else cout << "Error type 9 at Line " << args->line_num << ": invalid argument number for compare, expect " << fun_type.size() <<", got "<< args_type.size() << endl;
     }
 }
 
@@ -272,9 +273,9 @@ v_type* check_struct_member(my_struct* stc, string member, int line) {
 void check_rvalue(Node *node, int line) {
     Node *left_node = node->sub_nodes[0];
     int size = left_node->sub_nodes.size();
-    if (!(size == 1 && left_node->sub_nodes[0]->name == "ID" || 
-        size == 3 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "DOT" && left_node->sub_nodes[2]->name == "ID" ||
-        size == 4 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "LB" && left_node->sub_nodes[2]->name == "Exp" && left_node->sub_nodes[3]->name == "RB")) {
+    if (!((size == 1 && left_node->sub_nodes[0]->name == "ID") || 
+        (size == 3 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "DOT" && left_node->sub_nodes[2]->name == "ID")||
+        (size == 4 && left_node->sub_nodes[0]->name == "Exp" && left_node->sub_nodes[1]->name == "LB" && left_node->sub_nodes[2]->name == "Exp" && left_node->sub_nodes[3]->name == "RB"))) {
         semantic_error(6, line, "");
     } 
 }

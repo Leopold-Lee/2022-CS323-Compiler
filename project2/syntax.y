@@ -68,6 +68,10 @@ ExtDef:
             def_variable($2);
             assign_type(type, $2, false);
         } 
+        else {
+            def_variable($2);
+            assign_type($1->at.struct_name, $2, true);
+        }
     }
     | Specifier SEMI { //define struct
         $$ = new Node("ExtDef", @$.first_line);
@@ -145,11 +149,15 @@ StructSpecifier:
             struct_map[$2->value] = stc;
             def_struct(stc, $4);
         }
+        $$->at.struct_name = $2->value;
     }
     | STRUCT ID {
         $$ = new Node("StructSpecifier", @$.first_line);
         $$->add_sub($1);  
         $$->add_sub($2);  
+        if (!struct_map.count($2->value)) {
+            cout << "Error: struct " << $2->value << "not defined" << endl; 
+        }
         $$->at.struct_name = $2->value;
     }
     | STRUCT ID LC DefList error {error_info("Missing closing curly braces '}'");}
@@ -489,7 +497,7 @@ Exp:
         $$->add_sub($3);
         $$->add_sub($4);
         if (variable_map.count($1->value)) {
-            semantic_error(11, $$->line_num, "");
+            semantic_error(11, $$->line_num, $1->value);
             // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
         }
         else{
