@@ -1,2 +1,2 @@
-Error type 2 at Line 4: undefined function: bar
+Error type 5 at Line 9: unmatching type on both sides of assignment
 Error type 4 at Line 13: redefine function: bar

@@ -1,3 +1,2 @@
-Error type 1 at Line 4: undefined variable: c
-Error type 6 at Line 5: left side in assignment is rvalue
-Error type 1 at Line 7: undefined variable: c
+Error type 13 at Line 4: accessing with non-struct variable
+Error type 3 at Line 5: redefine variable: b

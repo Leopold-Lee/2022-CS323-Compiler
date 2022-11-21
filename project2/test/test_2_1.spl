@@ -1,8 +1,7 @@
 int foo()
 {
   int a = 10;
-  int b = 11 + c;
-  float a = 1.0;
-  6 = a;
-  return c;
+  int b = a.a;
+  float b = 1.0;
+  return (a / 3) * a;
 }
