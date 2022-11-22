@@ -142,7 +142,7 @@ void check_return(v_type* return_type, Node* stmt)
                 match = exp->at.struct_name.compare(return_type->struct_name)==0;
             }
             // cout << "return type matched: " << match << endl;
-            if (!match) semantic_error(8, stmt->line_num, ""); //cout << "Type 8 error at line " << stmt->line_num << ": a function’s return value type mismatches the declared type" << endl;
+            if (!match && exp->at.type != TYPE_ERROR) semantic_error(8, stmt->line_num, ""); //cout << "Type 8 error at line " << stmt->line_num << ": a function’s return value type mismatches the declared type" << endl;
         }
     }
     vector<Node*> subs = stmt->sub_nodes;

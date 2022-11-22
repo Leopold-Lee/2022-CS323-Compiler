@@ -388,7 +388,7 @@ Exp:
         check_rvalue($$, @$.first_line);
         v_type t1 = $1->at;
         v_type t2 = $3->at;
-        if (t1.type != t2.type || t1.struct_name != t2.struct_name || t1.array_dim != t2.array_dim)
+        if (t2.type != TYPE_ERROR && (t1.type != t2.type || t1.struct_name != t2.struct_name || t1.array_dim != t2.array_dim))
         {
             semantic_error(5, $$->line_num, "");
             // std::cout << "Type 5 error at line: " << $$->line_num << " unmatching types appear at both sides of the assignment operatot" << std::endl;
@@ -399,48 +399,56 @@ Exp:
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);        
+        $$->at.type = TYPE_INT;
     }
     | Exp OR Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp LT Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp LE Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp GT Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp GE Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp NE Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp EQ Exp {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
+        $$->at.type = TYPE_INT;
     }
     | Exp PLUS Exp {
         $$ = new Node("Exp", @$.first_line);
@@ -448,8 +456,9 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->at = $1->at;
-        if ($1->at.type != $3->at.type) {
+        if ($1->at.type != $3->at.type && !($1->at.type == TYPE_ERROR || $3->at.type == TYPE_ERROR)) {
             semantic_error(7, $$->line_num, "");
+            $$->at.type = TYPE_ERROR;
         }
     }
     | Exp MINUS Exp {
@@ -458,8 +467,9 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->at = $1->at;
-        if ($1->at.type != $3->at.type) {
+        if ($1->at.type != $3->at.type && !($1->at.type == TYPE_ERROR || $3->at.type == TYPE_ERROR)) {
             semantic_error(7, $$->line_num, "");
+            $$->at.type = TYPE_ERROR;
         }
     }
     | Exp MUL Exp {
@@ -468,8 +478,9 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->at = $1->at;
-        if ($1->at.type != $3->at.type) {
+        if ($1->at.type != $3->at.type && !($1->at.type == TYPE_ERROR || $3->at.type == TYPE_ERROR)) {
             semantic_error(7, $$->line_num, "");
+            $$->at.type = TYPE_ERROR;
         }
     }
     | Exp DIV Exp {
@@ -478,8 +489,9 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->at = $1->at;
-        if ($1->at.type != $3->at.type) {
+        if ($1->at.type != $3->at.type && !($1->at.type == TYPE_ERROR || $3->at.type == TYPE_ERROR)) {
             semantic_error(7, $$->line_num, "");
+            $$->at.type = TYPE_ERROR;
         }
     }
     | LP Exp RP {
@@ -510,6 +522,7 @@ Exp:
         $$->add_sub($4);
         if (variable_map.count($1->value)) {
             semantic_error(11, $$->line_num, $1->value);
+            $$->at.type = TYPE_ERROR;
             // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
         }
         else{
@@ -523,6 +536,7 @@ Exp:
             }
             else {
                 semantic_error(2, $$->line_num, $1->value);
+                $$->at.type = TYPE_ERROR;
                 // cout << "Type 11 error at line " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
             }
         }
@@ -536,6 +550,7 @@ Exp:
         check_fun($1, NULL);  
         if (variable_map.count($1->value)) {
             semantic_error(11, $$->line_num, "");
+            $$->at.type = TYPE_ERROR;
             // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
         }
         else {
@@ -549,6 +564,7 @@ Exp:
             }
             else {
                 semantic_error(2, $$->line_num, $1->value);
+                $$->at.type = TYPE_ERROR;
                 // cout << "Type 11 error at line " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
             }
         }
@@ -604,8 +620,8 @@ Exp:
             $$->at.array_dim = t->array_dim;
         }
         else {
-            $$->at.type = TYPE_UNKNOW;
             semantic_error(1, $$->line_num, $1->value);
+            $$->at.type = TYPE_ERROR;
             // cout << "Error type 1 at Line "<< $$->line_nume << ": undefined variable: "<< $1->value << std::endl; 
         }
     }
