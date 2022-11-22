@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 using namespace std;
-enum TYPE_T {TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_UNKNOW, TYPE_STRUCT};
+enum TYPE_T {TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_UNKNOW, TYPE_STRUCT, TYPE_ERROR};
 
 class v_type
 {

@@ -1,2 +1,2 @@
-Error type 13 at Line 4: accessing with non-struct variable
-Error type 3 at Line 5: redefine variable: b
+Error type 1 at Line 16: undefined variable: test
+Error type 1 at Line 16: undefined variable: test2

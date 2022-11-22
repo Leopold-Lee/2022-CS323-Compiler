@@ -37,7 +37,7 @@
 %type<node> INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT      
 %type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR FOR
 
-%type <node> Program ExtDefList ExtDef ExtDecList Specifier StructSpecifier VarDec
+%type <node> Program ExtDefList ExtDef ExtDecList Specifier StructSpecifier VarDec Specifier_FunDec
 %type <node> FunDec VarList ParamDec CompSt StmtList Stmt DefList Def DecList Dec Args Exp
 
 %%
@@ -78,23 +78,35 @@ ExtDef:
         $$->add_sub($1);
         $$->add_sub($2);
     }
-    | Specifier FunDec CompSt { //define functions
+    | Specifier_FunDec CompSt { //define functions
         $$ = new Node("ExtDef", @$.first_line);
-        $$->add_sub($1);
+        $$->add_sub($1->sub_nodes[0]);
+        $$->add_sub($1->sub_nodes[1]);
         $$->add_sub($2);
-        $$->add_sub($3);
-        std::string fun_name = $2->sub_nodes[0]->value;
-        if (function_map.count(fun_name)) {
-            semantic_error(4, $$->line_num, fun_name);
-        }
-        else{
-            Function *fun = new Function(fun_name, $1, $2);
-            function_map[fun_name] = fun;
-            check_return(fun->return_type, $3);
+        std::string fun_name = $1->sub_nodes[1]->sub_nodes[0]->value;
+        if (function_map.count(fun_name) && $1->at.type != TYPE_ERROR) {
+            Function* fun = function_map[fun_name];
+            check_return(fun->return_type, $2);
         }
     }
     |  Specifier ExtDecList error {error_info("Missing semicolon ';'");}
     |  Specifier error {error_info("Missing semicolon ';'");}
+    ;
+Specifier_FunDec:
+    Specifier FunDec {
+        $$ = new Node("Specifier_FunDec", @$.first_line);
+        $$->add_sub($1);
+        $$->add_sub($2);
+        std::string fun_name = $2->sub_nodes[0]->value;
+        if (function_map.count(fun_name)) {
+            semantic_error(4, $$->line_num, fun_name);
+            $$->at.type = TYPE_ERROR;
+        }
+        else{
+            Function *fun = new Function(fun_name, $1, $2);
+            function_map[fun_name] = fun;
+        }
+    }
     ;
 ExtDecList:
     VarDec {
@@ -156,7 +168,7 @@ StructSpecifier:
         $$->add_sub($1);  
         $$->add_sub($2);  
         if (!struct_map.count($2->value)) {
-            cout << "Error: struct " << $2->value << "not defined" << endl; 
+            cout << "Error: struct " << $2->value << " not defined" << endl; 
         }
         $$->at.struct_name = $2->value;
     }

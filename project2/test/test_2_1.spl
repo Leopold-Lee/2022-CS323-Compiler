@@ -1,7 +1,22 @@
-int foo()
+struct test
 {
-  int a = 10;
-  int b = a.a;
-  float b = 1.0;
-  return (a / 3) * a;
+  int a;
+};
+
+struct test2
+{
+  int b;
+};
+
+int foo(int n)
+{
+  if (n == 1 || n == 2) {
+    struct test t1;
+    struct test2 t2;
+    test = test2;
+    return 1;
+  }
+  else {
+    return foo(n - 1) + foo(n - 2);
+  }
 }
