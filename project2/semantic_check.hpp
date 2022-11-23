@@ -4,7 +4,7 @@
 #include "variable.hpp"
 #include "unordered_map"
 #include "struct.hpp"
-extern std::unordered_map<std::string, Variable *> variable_map;
+extern std::unordered_map<std::string, Variable *> *variable_map;
 extern std::unordered_map<std::string, Function*> function_map;
 extern std::unordered_map<std::string, my_struct*> struct_map;
 
@@ -71,14 +71,14 @@ void def_variable(Node *node) {
         Node* temp = node->sub_nodes[0];
         if(temp->name.compare("ID")==0) {
             std::string variable_name = temp->value;
-            if(variable_map.count(variable_name))
+            if(variable_map->count(variable_name))
             {
                 semantic_error(3, node->line_num, variable_name);
                 // std::cout << "variable redefined\n"; 
             }
             else{
                 Variable* new_variable = new Variable(variable_name);
-                variable_map[variable_name] = new_variable;
+                variable_map->emplace(variable_name, new_variable);
             }
         }
         else if(temp->name.compare("VarDec")==0) {
@@ -90,7 +90,7 @@ void def_variable(Node *node) {
             }
             if(dimension && temp->name.compare("ID") == 0){
                 std::string variable_name = temp->value;
-                Variable* variable = variable_map[variable_name];
+                Variable* variable = variable_map->at(variable_name);
                 variable->t->array_dim = dimension;
             }
         }
@@ -109,17 +109,17 @@ void assign_type(std::string type, Node * dec, bool is_struct) {
         std::string name = temp->value;
         if (!is_struct) {
             if (type.compare("int") == 0) {
-                variable_map[name]->t->type = TYPE_T::TYPE_INT;
+                variable_map->at(name)->t->type = TYPE_T::TYPE_INT;
             }
             else if (type.compare("char") == 0) {
-                variable_map[name]->t->type = TYPE_T::TYPE_CHAR;
+                variable_map->at(name)->t->type = TYPE_T::TYPE_CHAR;
             }
             else if (type.compare("float") == 0) {
-                variable_map[name]->t->type = TYPE_T::TYPE_FLOAT;
+                variable_map->at(name)->t->type = TYPE_T::TYPE_FLOAT;
             }
         }
         else {
-            Variable * var = variable_map[name];
+            Variable * var = variable_map->at(name);
             var->t->type = TYPE_STRUCT;
             var->t->struct_name = type;
         }
@@ -184,7 +184,7 @@ void check_fun(Node *id, Node* args) {
                 }
             }
         }
-        else cout << "Error type 9 at Line " << args->line_num << ": invalid argument number for compare, expect " << fun_type.size() <<", got "<< args_type.size() << endl;
+        else cout << "Error type 9 at Line " << args->line_num << ": invalid argument number for " << id->value << ", expect " << fun_type.size() <<", got "<< args_type.size() << endl;
     }
 }
 
