@@ -1,0 +1,28 @@
+struct test
+{
+    int a;
+    int b;
+};
+
+int foo(int b)
+{
+  return b + 10;
+}
+
+int test1(int a, int b)
+{
+  int c;
+  c = foo(b);
+  if (b > 0)
+  {
+    int a = c + 3;
+    b = b - a;
+  }
+  else 
+  {
+    int a = c + 1;
+    int b = c;
+  }
+  a = a + b;
+  return a;
+}
