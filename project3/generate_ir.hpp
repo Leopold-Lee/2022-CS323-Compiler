@@ -1,8 +1,6 @@
 #include "node.hpp"
 #include "string.h"
 
-
-
 enum Operation {START, OP_ADD, OP_SUB, OP_ASSIGN, OP_EQ, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
 
 class IR {
@@ -122,7 +120,7 @@ IR* translate_exp(Node* exp, string place) {
             string t2 = new_place();
             IR* code1 = translate_exp(exp1, t1);
             IR* code2 = translate_exp(exp2, t2);
-            IR* code3 = new IR(place, OP_ASSIGN, t1, t2);
+            IR* code3 = new IR(place, OP_ADD, t1, t2);
             return combine_codes(code1, code2, code3);
         }
         else if(op->name.compare("ASSIGN") == 0) {
@@ -135,7 +133,6 @@ IR* translate_exp(Node* exp, string place) {
             IR* code = translate_exp(op, place);
             return code;
         }
-
         //functions
         else if(exp1->name.compare("ID") == 0 ){
             if (exp1->value.compare("read") == 0)
@@ -204,15 +201,13 @@ IR* translate_cond_exp(Node* exp, string lbt, string lbf) {
         else if (op->name.compare("AND") == 0) {
             string lb1 = new_lable();
             IR* code1 = translate_cond_exp(exp1, lb1, lbf);
-            code1->append(new IR(lb1, LABLE, "", ""));
             IR* code2 = translate_cond_exp(exp2, lbt, lbf);
-            return combine_codes(code1, code2);
+            return combine_codes(code1, new IR(lb1, LABLE, "", ""), code2);
         } else if (op->name.compare("OR") == 0) {
             string lb1 = new_lable();
             IR* code1 = translate_cond_exp(exp1, lb1, lbf);
-            code1->append(new IR(lb1, LABLE, "", ""));
             IR* code2 = translate_cond_exp(exp2, lbt, lbf);
-            return combine_codes(code1, code2);
+            return combine_codes(code1, new IR(lb1, LABLE, "", ""), code2);
         } else if(op->name.compare("Exp") == 0) { //LP Exp RP
             IR* code = translate_cond_exp(op, lbt, lbf);
             return code;
@@ -248,17 +243,17 @@ IR* translate_stmt(Node* stmt) {
         IR* code1 = new IR(lb1, LABLE, "", "");
         code1->append(translate_cond_exp(stmt->sub_nodes[2], lb2, lb3));
         IR* code2 = new IR(lb2, LABLE, "", "");
-        IR* code3 = translate_stmt(stmt->sub_nodes[4]);
-        code3->append(new IR(lb1, GOTO, "", ""));
-        return combine_codes(code1, code2, code3);
+        code2->next = translate_stmt(stmt->sub_nodes[4]);
+        combine_codes(code2, new IR(lb1, GOTO, "", ""));
+        return combine_codes(code1, code2, new IR(lb3, LABLE, "", ""));
     }
     else if(size == 6) { //IF LP Exp RP Stmt LOWER_ELSE
         string lb1 = new_lable();
         string lb2 = new_lable();
         IR* code1 = translate_cond_exp(stmt->sub_nodes[2], lb1, lb2);
-        code1->append(new IR(lb1, LABLE, "", ""));
+        combine_codes(code1, new IR(lb1, LABLE, "", ""));
         IR* code2 = translate_stmt(stmt->sub_nodes[4]);
-        code2->append(new IR(lb2, LABLE, "", ""));
+        combine_codes(code2, new IR(lb2, LABLE, "", ""));
         return combine_codes(code1, code2);
     }
     else if(size == 7) {//IF LP Exp RP Stmt ELSE Stmt
@@ -266,11 +261,13 @@ IR* translate_stmt(Node* stmt) {
         string lb2 = new_lable();
         string lb3 = new_lable();
         IR* code1 = translate_cond_exp(stmt->sub_nodes[2], lb1, lb2);
-        code1->append(new IR(lb1, LABLE, "", ""));
+        combine_codes(code1, new IR(lb1, LABLE, "", ""));
         IR* code2 = translate_stmt(stmt->sub_nodes[4]);
-        code2->append(new IR(lb2, LABLE, "", ""));
+        IR* temp = new IR(lb3, GOTO, "", "");
+        temp->next = new IR(lb2, LABLE, "", "");
+        combine_codes(code2, temp);
         IR* code3 = translate_stmt(stmt->sub_nodes[6]);
-        code3->append(new IR(lb3, LABLE, "", ""));
+        combine_codes(code3, new IR(lb3, LABLE, "", ""));
         return combine_codes(code1, code2, code3);
     }
     return NULL;
