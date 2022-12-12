@@ -26,12 +26,38 @@ public:
     }
 };
 
-void show_code(IR* code) {
+string transform(IR *code) {
+    string result = "";
     while (code)
     {
-        cout << code->target << " " << code->op << " " << code->arg1 << " " << code->arg2 << endl;
+        switch (code->op)
+        {
+            case OP_ADD: result += (code->target + " := " + code->arg1 + " + " + code->arg2 + "\n"); break;
+            case OP_SUB: result += (code->target + " := " + code->arg1 + " - " + code->arg2 + "\n"); break;
+            case OP_MUL: result += (code->target + " := " + code->arg1 + " * " + code->arg2 + "\n"); break;
+            case OP_DIV: result += (code->target + " := " + code->arg1 + " / " + code->arg2 + "\n"); break;
+            case OP_ASSIGN: result += (code->target + " := " + code->arg1 + "\n"); break;
+            case LABLE: result += "LABEL " + code->target + " :\n"; break;
+            case GOTO: result += "GOTO " + code->target + "\n";break;
+            case OP_EQ: result += "IF " + code->arg1 + " == " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_RETURN: "RETURN " + code->target + "\n"; break;
+            case READ: "READ " + code->target + "\n"; break;
+            case WRITE: "WRITE " + code->target + "\n"; break;
+            default: break;
+        }
         code = code->next;
     }
+    return result;
+}
+
+
+void show_code(IR* code) {
+    cout << transform(code);
+    // while (code)
+    // {
+    //     cout << code->target << " " << code->op << " " << code->arg1 << " " << code->arg2 << endl;
+    //     code = code->next;
+    // }
 }
 
 void debug(int line) {
