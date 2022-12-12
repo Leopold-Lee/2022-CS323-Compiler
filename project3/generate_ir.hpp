@@ -1,7 +1,7 @@
 #include "node.hpp"
 #include "string.h"
 
-enum Operation {START, OP_ADD, OP_SUB, OP_ASSIGN, OP_EQ, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
+enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_EQ, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
 
 class IR {
 public:
@@ -114,16 +114,21 @@ IR* translate_exp(Node* exp, string place) {
         Node* exp1 = exp->sub_nodes[0];
         Node* op = exp->sub_nodes[1];
         Node* exp2 = exp->sub_nodes[2];
-        if (op->name.compare("PLUS")==0)
+        if (op->name.compare("PLUS")==0 || op->name.compare("MINUS")==0 || op->name.compare("MUL")==0 || op->name.compare("DIV")==0)
         {
+            Operation opron;
+            if (op->name.compare("PLUS")==0) opron = OP_ADD;
+            else if (op->name.compare("MINUS")==0) opron = OP_SUB;
+            else if (op->name.compare("MUL")==0) opron = OP_MUL;
+            else if (op->name.compare("DIV")==0) opron = OP_DIV;
+            
             string t1 = new_place();
             string t2 = new_place();
             IR* code1 = translate_exp(exp1, t1);
             IR* code2 = translate_exp(exp2, t2);
-            IR* code3 = new IR(place, OP_ADD, t1, t2);
+            IR* code3 = new IR(place, opron, t1, t2);
             return combine_codes(code1, code2, code3);
-        }
-        else if(op->name.compare("ASSIGN") == 0) {
+        } else if(op->name.compare("ASSIGN") == 0) {
             string variable = exp1->sub_nodes[0]->value; //ID
             string tp = new_place();
             IR* code1 = translate_exp(exp2, tp);
