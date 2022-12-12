@@ -36,10 +36,17 @@ void show_code(IR* code) {
     }
 }
 
+void debug(int line) {
+    cout << "line" << line << endl;
+}
+
 int place_count = 0;
 int lable_count = 0;
 
 IR* translate_args(Node* args, vector<string> args_list);
+
+void translate(Node* node, IR* code);
+
 
 string new_place(){
     place_count+= 1;
@@ -52,29 +59,44 @@ string new_lable(){
 }
 
 IR* combine_codes(IR* code1, IR* code2, IR* code3) {
-    IR* temp = code1;
-    while (temp->next)
+    if (code1 && code2 && code3)
     {
-        temp = temp->next;
+        /* code */
+        IR* temp = code1;
+        while (temp->next)
+        {
+            temp = temp->next;
+        }
+        temp->append(code2);
+        temp = code2;
+        while (temp->next)
+        {
+            temp = temp->next;
+        }
+        temp->append(code3);
+        return code1;
     }
-    temp->append(code2);
-    temp = code2;
-    while (temp->next)
-    {
-        temp = temp->next;
+    else {
+        cout << "null code" << endl;
+        return NULL;
     }
-    temp->append(code3);
-    return code1;
+    
 }
 
 IR* combine_codes(IR* code1, IR* code2) {
-    IR* temp = code1;
-    while (temp->next)
+    if (code1 && code2)
     {
-        temp = temp->next;
+        IR* temp = code1;
+        while (temp->next)
+        {
+            temp = temp->next;
+        }
+        temp->append(code2);
+        return code1;
+    } else {
+        cout << "null code" << endl;
+        return NULL;
     }
-    temp->append(code2);
-    return code1;
 }
 
 IR* translate_exp(Node* exp, string place) {
@@ -94,7 +116,7 @@ IR* translate_exp(Node* exp, string place) {
         Node* exp1 = exp->sub_nodes[0];
         Node* op = exp->sub_nodes[1];
         Node* exp2 = exp->sub_nodes[2];
-        if (op->name.compare("ADD")==0)
+        if (op->name.compare("PLUS")==0)
         {
             string t1 = new_place();
             string t2 = new_place();
@@ -109,6 +131,9 @@ IR* translate_exp(Node* exp, string place) {
             IR* code1 = translate_exp(exp2, tp);
             IR* code2 = new IR(variable, OP_ASSIGN, tp, "");
             return combine_codes(code1, code2);
+        } else if(op->name.compare("Exp") == 0) { //LP Exp RP
+            IR* code = translate_exp(op, place);
+            return code;
         }
 
         //functions
@@ -188,6 +213,9 @@ IR* translate_cond_exp(Node* exp, string lbt, string lbf) {
             code1->append(new IR(lb1, LABLE, "", ""));
             IR* code2 = translate_cond_exp(exp2, lbt, lbf);
             return combine_codes(code1, code2);
+        } else if(op->name.compare("Exp") == 0) { //LP Exp RP
+            IR* code = translate_cond_exp(op, lbt, lbf);
+            return code;
         }
     } else if (exp->sub_nodes.size() == 2 && exp->sub_nodes[0]->name.compare("NOT") == 0) {
         return translate_cond_exp(exp->sub_nodes[1], lbf, lbt);
@@ -197,11 +225,14 @@ IR* translate_cond_exp(Node* exp, string lbt, string lbf) {
 
 IR* translate_stmt(Node* stmt) {
     int size = stmt->sub_nodes.size();
+    if(size == 1) {
+        IR* code = new IR("", START, "", "");
+        translate(stmt->sub_nodes[0], code);
+        return code;
+    }
     if(size == 2) {//Exp SEMI
-        cout << "==============" << endl;
         string tp = new_place();
-        IR* code = translate_exp(stmt->sub_nodes[1], tp);
-        show_code(code);
+        IR* code = translate_exp(stmt->sub_nodes[0], tp);
         return code;
     }
     else if(size == 3) {//RETURN Exp SEMI
@@ -217,9 +248,6 @@ IR* translate_stmt(Node* stmt) {
         IR* code1 = new IR(lb1, LABLE, "", "");
         code1->append(translate_cond_exp(stmt->sub_nodes[2], lb2, lb3));
         IR* code2 = new IR(lb2, LABLE, "", "");
-        code2->append(translate_stmt(stmt->sub_nodes[4]));
-        // code2->next->append(new IR(lb3, LABLE, "", ""));
-        combine_codes(code2, new IR(lb3, LABLE, "", ""));
         IR* code3 = translate_stmt(stmt->sub_nodes[4]);
         code3->append(new IR(lb1, GOTO, "", ""));
         return combine_codes(code1, code2, code3);
@@ -264,10 +292,21 @@ void translate(Node* node, IR* code) {
     if (node->name.compare("Dec") == 0)
     {
         IR* translated = translate_dec(node);
-        combine_codes(code, translated);
+        if (translated)
+        {
+            combine_codes(code, translated);
+        } else {
+            cout << "null pointer" << endl;
+        }
+        
     } else if(node->name.compare("Stmt") == 0) {
         IR* translated = translate_stmt(node);
-        combine_codes(code, translated);
+        if (translated)
+        {
+            combine_codes(code, translated);
+        } else {
+            cout << "null pointer" << endl;
+        }
     }
     else {
         for (size_t i = 0; i < node->sub_nodes.size(); i++)
