@@ -1,7 +1,7 @@
 #include "node.hpp"
 #include "string.h"
 
-enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
+enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG, PARA};
 
 class IR {
 public:
@@ -57,6 +57,9 @@ string transform(IR *code) {
             case READ: result += "READ " + code->target + "\n"; break;
             case WRITE: result += "WRITE " + code->target + "\n"; break;
             case OP_FUN: result += "FUNCTION " + code->target + " :\n"; break;
+            case ARG: result += "ARG " + code->target + "\n"; break;
+            case CALL: result += code->target + " := CALL " + code->arg1 + "\n"; break;
+            case PARA: result += "PARAM " + code->target + "\n"; break;
             default: break;
         }
         code = code->next;
@@ -81,7 +84,7 @@ void debug(int line) {
 int place_count = 0;
 int lable_count = 0;
 
-IR* translate_args(Node* args, vector<string> args_list);
+IR* translate_args(Node* args, vector<string> &args_list);
 
 void translate_compst(Node* node, IR* code);
 
@@ -189,7 +192,7 @@ IR* translate_exp(Node* exp, string place) {
                 return new IR(place, READ, "", "");
             }
             else {
-                return new IR(exp->value, CALL, "", "");
+                return new IR(place, CALL, exp1->value, "");
             }    
         } 
     }
@@ -209,19 +212,19 @@ IR* translate_exp(Node* exp, string place) {
         } else {//ID LP Args RP
             vector<string> args_list;
             IR* code1 = translate_args(exp->sub_nodes[2], args_list);
-            IR* code2 = new IR(args_list[0], ARG, "", "");
-            for (size_t i = 1; i < args_list.size(); i++)
+            IR* code2 = new IR(args_list[args_list.size() - 1], ARG, "", "");
+            for (size_t i = 2; i <= args_list.size(); i++)
             {
-                code2->append(new IR(args_list[i], ARG, "", ""));
+                code2->append(new IR(args_list[args_list.size() - i], ARG, "", ""));
             }
-            IR* call = new IR(exp->sub_nodes[0]->value, CALL, "", "");
+            IR* call = new IR(place, CALL, exp->sub_nodes[0]->value, "");
             return combine_codes(code1, code2, call);
         }
     }
     return NULL;
 }
 
-IR* translate_args(Node* args, vector<string> args_list) {
+IR* translate_args(Node* args, vector<string> &args_list) {
     if (args->sub_nodes.size() == 1) //Exp
     {
         string tp = new_place();
@@ -375,18 +378,38 @@ void translate_compst(Node* node, IR* code) {
     }
 }
 
+void translate_parms(Node* node, IR* code) {
+    if (node->name.compare("VarDec") == 0)
+    {
+        if (node->sub_nodes.size() == 1) //ID
+        {
+            IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
+            combine_codes(code, para);
+        } else { //VarDec LB INT RB
+
+        }
+    }
+    else {
+        for (size_t i = 0; i < node->sub_nodes.size(); i++)
+        {
+            translate_parms(node->sub_nodes[i], code);
+        }
+    }
+}
+
 void translate_fundec(Node *node, IR* code) {
     if (node->name.compare("FunDec") == 0)
     {
-        if (node->sub_nodes.size() == 5) //ID LP VarList RP
+        if (node->sub_nodes.size() == 4) //ID LP VarList RP
         {
-            /* code */
+            IR *def_fun = new IR(node->sub_nodes[0]->value, OP_FUN, "", "");
+            combine_codes(code, def_fun);
+            translate_parms(node, code);
         }
         else { //ID LP RP
             IR *def_fun = new IR(node->sub_nodes[0]->value, OP_FUN, "", "");
             combine_codes(code, def_fun);
         }
-            
     }
     else {
         for (size_t i = 0; i < node->sub_nodes.size(); i++)
