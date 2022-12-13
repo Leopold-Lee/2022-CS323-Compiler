@@ -1,7 +1,7 @@
 #include "node.hpp"
 #include "string.h"
 
-enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_EQ, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
+enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG};
 
 class IR {
 public:
@@ -18,6 +18,14 @@ public:
         this->arg2 = arg2;
         this->pre = NULL;
         this->next = NULL;
+        if (this->arg1.length() > 0 && this->arg1[0] >= '0' && this->arg1[0] <= '9')
+        {
+            this->arg1 = "#" + this->arg1;
+        }
+        if (this->arg2.length() > 0 && this->arg2[0] >= '0' && this->arg2[0] <= '9')
+        {
+            this->arg2 = "#" + this->arg2;
+        }
     }
 
     void append(IR *ir) {
@@ -40,9 +48,15 @@ string transform(IR *code) {
             case LABLE: result += "LABEL " + code->target + " :\n"; break;
             case GOTO: result += "GOTO " + code->target + "\n";break;
             case OP_EQ: result += "IF " + code->arg1 + " == " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_RETURN: "RETURN " + code->target + "\n"; break;
-            case READ: "READ " + code->target + "\n"; break;
-            case WRITE: "WRITE " + code->target + "\n"; break;
+            case OP_NE: result += "IF " + code->arg1 + " != " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_LT: result += "IF " + code->arg1 + " < " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_LE: result += "IF " + code->arg1 + " <= " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_GT: result += "IF " + code->arg1 + " > " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_GE: result += "IF " + code->arg1 + " >= " + code->arg2 + " GOTO " + code->target + "\n"; break;
+            case OP_RETURN: result += "RETURN " + code->target + "\n"; break;
+            case READ: result += "READ " + code->target + "\n"; break;
+            case WRITE: result += "WRITE " + code->target + "\n"; break;
+            case OP_FUN: result += "FUNCTION " + code->target + " :\n"; break;
             default: break;
         }
         code = code->next;
@@ -69,7 +83,7 @@ int lable_count = 0;
 
 IR* translate_args(Node* args, vector<string> args_list);
 
-void translate(Node* node, IR* code);
+void translate_compst(Node* node, IR* code);
 
 
 string new_place(){
@@ -135,6 +149,10 @@ IR* translate_exp(Node* exp, string place) {
             string int_value = exp->sub_nodes[0]->value;
             return new IR(place, OP_ASSIGN, int_value, "");
         }
+    } else if(size == 2) { //MINUS Exp
+        string tp = new_place();
+        IR* code1 = translate_exp(exp->sub_nodes[1], tp);
+        return combine_codes(code1, new IR(place, OP_SUB, "0", tp));
     }
     else if(size == 3) {
         Node* exp1 = exp->sub_nodes[0];
@@ -176,12 +194,18 @@ IR* translate_exp(Node* exp, string place) {
         } 
     }
     else if(size == 4) {
-        if (exp->sub_nodes[0]->value.compare("write") == 0)//write LP Exp RP
+        if (exp->sub_nodes[0]->value.compare("write") == 0)//write LP Args RP
         {
             string tp = new_place();
-            IR* code = translate_exp(exp->sub_nodes[2], tp);
-            code->append(new IR(tp, WRITE, "", ""));
-            return code;
+            if (exp->sub_nodes[2]->sub_nodes.size() == 1)
+            {
+                IR* code = translate_exp(exp->sub_nodes[2]->sub_nodes[0], tp);
+                return combine_codes(code, new IR(tp, WRITE, "", ""));
+            }
+            else {
+                cout << "wrong use of wirte" << endl;
+                return NULL;
+            }
         } else {//ID LP Args RP
             vector<string> args_list;
             IR* code1 = translate_args(exp->sub_nodes[2], args_list);
@@ -219,13 +243,21 @@ IR* translate_cond_exp(Node* exp, string lbt, string lbf) {
         Node* exp1 = exp->sub_nodes[0];
         Node* op = exp->sub_nodes[1];
         Node* exp2 = exp->sub_nodes[2];
-        if (op->name.compare("EQ") == 0)
+        if (op->name.compare("EQ") == 0 || op->name.compare("NE") == 0 || op->name.compare("LT") == 0 || op->name.compare("LE") == 0 || op->name.compare("GT") == 0 || op->name.compare("GE") == 0)
         {
+            // OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ
+            Operation opron;
+            if (op->name.compare("EQ")==0) opron = OP_EQ;
+            else if (op->name.compare("NE")==0) opron = OP_NE;
+            else if (op->name.compare("LT")==0) opron = OP_LT;
+            else if (op->name.compare("LE")==0) opron = OP_LE;
+            else if (op->name.compare("GT")==0) opron = OP_GT;
+            else if (op->name.compare("GE")==0) opron = OP_GE;
             string t1 = new_place();
             string t2 = new_place();
             IR* code1 = translate_exp(exp1, t1);
             IR* code2 = translate_exp(exp2, t2);
-            IR* code3 = new IR(lbt, OP_EQ, t1, t2);
+            IR* code3 = new IR(lbt, opron, t1, t2);
             code3->append(new IR(lbf, GOTO, "", ""));
             return combine_codes(code1, code2, code3);
         }
@@ -253,7 +285,7 @@ IR* translate_stmt(Node* stmt) {
     int size = stmt->sub_nodes.size();
     if(size == 1) {
         IR* code = new IR("", START, "", "");
-        translate(stmt->sub_nodes[0], code);
+        translate_compst(stmt->sub_nodes[0], code);
         return code;
     }
     if(size == 2) {//Exp SEMI
@@ -264,10 +296,9 @@ IR* translate_stmt(Node* stmt) {
     else if(size == 3) {//RETURN Exp SEMI
         string tp = new_place();
         IR* code = translate_exp(stmt->sub_nodes[1], tp);
-        code->append(new IR(tp, OP_RETURN, "", ""));
-        return code;
+        return combine_codes(code, new IR(tp, OP_RETURN, "", ""));
     }
-    else if(size == 5) {//WHILE LP Exp RP Stmt
+    else if(size == 5 && stmt->sub_nodes[0]->name.compare("WHILE") == 0) {//WHILE LP Exp RP Stmt
         string lb1 = new_lable();
         string lb2 = new_lable();
         string lb3 = new_lable();
@@ -278,7 +309,7 @@ IR* translate_stmt(Node* stmt) {
         combine_codes(code2, new IR(lb1, GOTO, "", ""));
         return combine_codes(code1, code2, new IR(lb3, LABLE, "", ""));
     }
-    else if(size == 6) { //IF LP Exp RP Stmt LOWER_ELSE
+    else if(size == 5 && stmt->sub_nodes[0]->name.compare("IF") == 0) { //IF LP Exp RP Stmt
         string lb1 = new_lable();
         string lb2 = new_lable();
         IR* code1 = translate_cond_exp(stmt->sub_nodes[2], lb1, lb2);
@@ -316,7 +347,7 @@ IR* translate_dec(Node* dec) {
     return NULL;
 }
 
-void translate(Node* node, IR* code) {
+void translate_compst(Node* node, IR* code) {
     if (node->name.compare("Dec") == 0)
     {
         IR* translated = translate_dec(node);
@@ -324,7 +355,7 @@ void translate(Node* node, IR* code) {
         {
             combine_codes(code, translated);
         } else {
-            cout << "null pointer" << endl;
+            // cout << "null pointer" << endl;
         }
         
     } else if(node->name.compare("Stmt") == 0) {
@@ -339,14 +370,51 @@ void translate(Node* node, IR* code) {
     else {
         for (size_t i = 0; i < node->sub_nodes.size(); i++)
         {
-            translate(node->sub_nodes[i], code);
+            translate_compst(node->sub_nodes[i], code);
         }
     }
-    
+}
+
+void translate_fundec(Node *node, IR* code) {
+    if (node->name.compare("FunDec") == 0)
+    {
+        if (node->sub_nodes.size() == 5) //ID LP VarList RP
+        {
+            /* code */
+        }
+        else { //ID LP RP
+            IR *def_fun = new IR(node->sub_nodes[0]->value, OP_FUN, "", "");
+            combine_codes(code, def_fun);
+        }
+            
+    }
+    else {
+        for (size_t i = 0; i < node->sub_nodes.size(); i++)
+        {
+            translate_fundec(node->sub_nodes[i], code);
+        }
+    }
+}
+
+void translate_extdef(Node *node, IR* code) {
+    if (node->name.compare("ExtDef") == 0)
+    {
+        if (node->sub_nodes[1]->name.compare("FunDec") == 0)
+        {
+            translate_fundec(node->sub_nodes[1], code);
+            translate_compst(node->sub_nodes[2], code);
+        }
+    }
+    else {
+        for (size_t i = 0; i < node->sub_nodes.size(); i++)
+        {
+            translate_extdef(node->sub_nodes[i], code);
+        }
+    }
 }
 
 void main_translate(Node* root) {
     IR* code = new IR("", START, "", "");
-    translate(root, code);
+    translate_extdef(root, code);
     show_code(code);
 }
