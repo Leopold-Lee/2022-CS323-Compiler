@@ -27,7 +27,6 @@ public:
             this->arg2 = "#" + this->arg2;
         }
     }
-
     void append(IR *ir) {
         this->next = ir;
         ir->pre = this;
@@ -67,14 +66,8 @@ string transform(IR *code) {
     return result;
 }
 
-
 void show_code(IR* code) {
     cout << transform(code);
-    // while (code)
-    // {
-    //     cout << code->target << " " << code->op << " " << code->arg1 << " " << code->arg2 << endl;
-    //     code = code->next;
-    // }
 }
 
 void debug(int line) {
@@ -87,7 +80,6 @@ int lable_count = 0;
 IR* translate_args(Node* args, vector<string> &args_list);
 
 void translate_compst(Node* node, IR* code);
-
 
 string new_place(){
     place_count+= 1;
@@ -360,7 +352,6 @@ void translate_compst(Node* node, IR* code) {
         } else {
             // cout << "null pointer" << endl;
         }
-        
     } else if(node->name.compare("Stmt") == 0) {
         IR* translated = translate_stmt(node);
         if (translated)

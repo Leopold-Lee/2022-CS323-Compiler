@@ -17,6 +17,11 @@ public:
         return_type->struct_name = rt.struct_name;
         addParameters(funDec);
     }
+    Function(string name, v_type* return_type, vector<v_type*> parameters){
+        this->name = name;
+        this->return_type = return_type;
+        this->parameters = parameters;
+    }
     void addParameters(Node* node) {
         for(Node *sub : node->sub_nodes)
         {

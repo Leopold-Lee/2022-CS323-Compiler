@@ -1,0 +1,29 @@
+[DEBUG] 2022-12-13 16:51:35,281 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 16:51:35,281 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 16:51:35,281 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 16:58:11,237 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 16:58:11,237 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 16:58:11,237 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 16:59:22,165 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 16:59:22,165 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 16:59:22,165 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 17:01:39,862 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 17:01:39,862 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 17:01:39,862 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 17:02:25,739 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 17:02:25,740 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 17:02:25,740 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 17:06:46,107 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.spl', 'inputs': '1', 'logpath': 'irsim.log'}
+[ERROR] 2022-12-13 17:06:46,107 (irsim.py 581): Line 1 does not belong to any function:
+int main()
+[ERROR] 2022-12-13 17:06:46,107 (irsim.py 581): Cannot find program entrance. Please make sure the 'main' function does exist
+[DEBUG] 2022-12-13 17:13:33,051 (irsim.py 620): Parsed arguments: {'irpath': '../../sample/test01.ir', 'inputs': '1', 'logpath': 'irsim.log'}
+[INFO] 2022-12-13 17:13:33,051 (irsim.py 567): File loaded successfully
+[INFO] 2022-12-13 17:14:36,398 (irsim.py 567): Program has exited gracefully
+[INFO] 2022-12-13 17:14:36,398 (irsim.py 567): Total instructions = 10
+[INFO] 2022-12-13 17:19:27,519 (irsim.py 567): KeyboardInterrupt raised, quit program
