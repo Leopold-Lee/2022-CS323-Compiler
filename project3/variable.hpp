@@ -9,6 +9,7 @@ public:
     TYPE_T type;
     string struct_name = "";
     int array_dim = 0;
+    vector<int> array_rec;
     v_type() {
         this->type = TYPE_UNKNOW;
     }

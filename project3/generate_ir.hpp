@@ -1,7 +1,12 @@
 #include "node.hpp"
 #include "string.h"
+#include <unordered_map>
 
-enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, LABLE, OP_RETURN, READ, WRITE, CALL, ARG, PARA};
+enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, 
+OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, 
+LABLE, OP_RETURN, READ, WRITE, CALL, ARG, PARA, DEC, ADDR, ADDR_A, STAR};
+
+extern std::unordered_map<std::string, Variable *> *variable_map;
 
 class IR {
 public:
@@ -59,6 +64,10 @@ string transform(IR *code) {
             case ARG: result += "ARG " + code->target + "\n"; break;
             case CALL: result += code->target + " := CALL " + code->arg1 + "\n"; break;
             case PARA: result += "PARAM " + code->target + "\n"; break;
+            case DEC: result += "DEC " + code->arg1 + " " + code->target + "\n"; break;
+            case ADDR: result += code->target + " := &" + code->arg1 + " + " + code->arg2 + "\n"; break;
+            case ADDR_A: result += "*" + code->target + " := " + code->arg1+ "\n"; break;
+            case STAR: result += code->target + " := *" + code->arg1 + "\n"; break;
             default: break;
         }
         code = code->next;
@@ -80,6 +89,8 @@ int lable_count = 0;
 IR* translate_args(Node* args, vector<string> &args_list);
 
 void translate_compst(Node* node, IR* code);
+
+IR* translate_exp(Node* exp, string place);
 
 string new_place(){
     place_count+= 1;
@@ -132,6 +143,32 @@ IR* combine_codes(IR* code1, IR* code2) {
     }
 }
 
+IR* translate_array(Node* exp, string place, int layer) {
+    if (exp->sub_nodes[0]->sub_nodes.size() == 4)
+    {
+        string tp = new_place();
+        IR* sub_code = translate_array(exp->sub_nodes[0], tp, layer + 1);
+        string arr = exp->sub_nodes[0]->value;
+        Variable* variable = variable_map->at(arr);
+        int width = variable->t->array_rec[layer];
+        string tp1 = new_place();
+        IR* code = translate_exp(exp->sub_nodes[2], tp1);
+        string tp2 = new_place();
+        IR* now = new IR(tp2, OP_MUL, tp1, to_string(width * 4));
+        IR* combine = new IR(place, OP_ADD, tp, tp2);
+        now->append(combine);
+        return combine_codes(sub_code, code, now);
+    }
+    else {//Exp LB Exp RB
+        string arr = exp->sub_nodes[0]->value;
+        Variable* variable = variable_map->at(arr);
+        int width = variable->t->array_rec[layer];
+        string tp = new_place();
+        IR* code = translate_exp(exp->sub_nodes[2], tp);
+        return combine_codes(code, new IR(place, OP_MUL, tp, to_string(width * 4)));
+    }
+}
+
 IR* translate_exp(Node* exp, string place) {
     int size = exp->sub_nodes.size();
     if (size == 1)
@@ -167,12 +204,26 @@ IR* translate_exp(Node* exp, string place) {
             IR* code2 = translate_exp(exp2, t2);
             IR* code3 = new IR(place, opron, t1, t2);
             return combine_codes(code1, code2, code3);
-        } else if(op->name.compare("ASSIGN") == 0) {
-            string variable = exp1->sub_nodes[0]->value; //ID
-            string tp = new_place();
-            IR* code1 = translate_exp(exp2, tp);
-            IR* code2 = new IR(variable, OP_ASSIGN, tp, "");
-            return combine_codes(code1, code2);
+        } else if(op->name.compare("ASSIGN") == 0) { 
+            string variable;
+            if (exp1->sub_nodes.size() == 1) { //ID
+                variable = exp1->sub_nodes[0]->value;
+                string tp = new_place();
+                IR* code1 = translate_exp(exp2, tp);
+                IR* code2 = new IR(variable, OP_ASSIGN, tp, "");
+                return combine_codes(code1, code2);
+            } 
+            else { //Exp LB Exp RB
+                string tp = new_place();
+                IR* code = translate_array(exp1, tp, 0);
+                string tp_addr = new_place();
+                IR* addr = new IR(tp_addr, ADDR, exp1->value, tp);
+                string tp1 = new_place();
+                IR* code1 = translate_exp(exp2, tp1);
+                IR* code2 = new IR(tp_addr, ADDR_A, tp1, "");
+                combine_codes(code1, code2);
+                return combine_codes(code, addr, code1);
+            }
         } else if(op->name.compare("Exp") == 0) { //LP Exp RP
             IR* code = translate_exp(op, place);
             return code;
@@ -201,7 +252,7 @@ IR* translate_exp(Node* exp, string place) {
                 cout << "wrong use of wirte" << endl;
                 return NULL;
             }
-        } else {//ID LP Args RP
+        } else if (exp->sub_nodes[0]->name.compare("ID") == 0){//ID LP Args RP
             vector<string> args_list;
             IR* code1 = translate_args(exp->sub_nodes[2], args_list);
             IR* code2 = new IR(args_list[args_list.size() - 1], ARG, "", "");
@@ -211,6 +262,13 @@ IR* translate_exp(Node* exp, string place) {
             }
             IR* call = new IR(place, CALL, exp->sub_nodes[0]->value, "");
             return combine_codes(code1, code2, call);
+        } else if (exp->sub_nodes[0]->name.compare("Exp") == 0) { //Exp LB Exp RB
+            string tp = new_place();
+            IR* code = translate_array(exp, tp, 0);
+            string tp_addr = new_place();
+            IR* addr = new IR(tp_addr, ADDR, exp->sub_nodes[0]->value, tp);
+            IR* code1 = new IR(place, STAR, tp_addr, "");
+            return combine_codes(code, addr, code1);
         }
     }
     return NULL;
@@ -338,6 +396,22 @@ IR* translate_dec(Node* dec) {
         IR* code1 = translate_exp(dec->sub_nodes[2], tp); //exp
         IR* code2 = new IR(varialbe, OP_ASSIGN, tp, "");
         return combine_codes(code1, code2);
+    } else { //VarDec
+        Node* var_dec = dec->sub_nodes[0];
+        if (var_dec->sub_nodes.size() == 4)
+        {
+            Variable* variable = variable_map->at(var_dec->value);
+            vector<int> array_rec;
+            v_type *t = variable->t;
+            int size = 1;
+            for (size_t i = 0; i < t->array_rec.size(); i++)
+            {
+                array_rec.push_back(size);
+                size = size * t->array_rec[i];
+            }
+            variable->t->array_rec = array_rec;
+            return new IR(to_string(size * 4), DEC, var_dec->value, "");
+        }
     }
     return NULL;
 }

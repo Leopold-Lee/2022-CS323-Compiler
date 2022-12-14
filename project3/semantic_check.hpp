@@ -83,8 +83,10 @@ void def_variable(Node *node) {
         }
         else if(temp->name.compare("VarDec")==0) {
             int dimension = 0;
+            vector<int> array_rec; array_rec.push_back(stoi(node->sub_nodes[2]->value));
             while(!temp->sub_nodes.empty())
             {
+                if (temp->sub_nodes.size() == 4) array_rec.push_back(stoi(temp->sub_nodes[2]->value));
                 dimension ++;
                 temp = temp->sub_nodes[0];
             }
@@ -92,6 +94,7 @@ void def_variable(Node *node) {
                 std::string variable_name = temp->value;
                 Variable* variable = variable_map->at(variable_name);
                 variable->t->array_dim = dimension;
+                variable->t->array_rec = array_rec;
             }
         }
     }
