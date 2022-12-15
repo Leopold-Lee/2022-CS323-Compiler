@@ -180,7 +180,7 @@ void check_fun(Node *id, Node* args) {
             for (size_t i = 0; i < args_type.size(); i++)
             {
                 // cout << args_type[i] << endl;
-                if(args_type[i].type != fun_type[i]->type || args_type[i].struct_name.compare(fun_type[i]->struct_name) != 0 || args_type[i].array_dim != fun_type[i]->array_dim) {
+                if(args_type[i].type != fun_type[i]->type || args_type[i].struct_name.compare(fun_type[i]->struct_name) != 0) {
                     semantic_error(9, args->line_num, "");
                     // cout << "Type 9 at line " << args->line_num << ": a function’s arguments mismatch the declared parameters" << endl;
                     break;

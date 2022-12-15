@@ -217,7 +217,7 @@ IR* translate_exp(Node* exp, string place) {
                 string tp = new_place();
                 IR* code = translate_array(exp1, tp, 0);
                 string tp_addr = new_place();
-                IR* addr = new IR(tp_addr, ADDR, exp1->value, tp);
+                IR* addr = new IR(tp_addr, OP_ADD, exp1->value, tp);
                 string tp1 = new_place();
                 IR* code1 = translate_exp(exp2, tp1);
                 IR* code2 = new IR(tp_addr, ADDR_A, tp1, "");
@@ -258,7 +258,7 @@ IR* translate_exp(Node* exp, string place) {
             IR* code2 = new IR(args_list[args_list.size() - 1], ARG, "", "");
             for (size_t i = 2; i <= args_list.size(); i++)
             {
-                code2->append(new IR(args_list[args_list.size() - i], ARG, "", ""));
+                combine_codes(code2, new IR(args_list[args_list.size() - i], ARG, "", ""));
             }
             IR* call = new IR(place, CALL, exp->sub_nodes[0]->value, "");
             return combine_codes(code1, code2, call);
@@ -266,8 +266,8 @@ IR* translate_exp(Node* exp, string place) {
             string tp = new_place();
             IR* code = translate_array(exp, tp, 0);
             string tp_addr = new_place();
-            IR* addr = new IR(tp_addr, ADDR, exp->sub_nodes[0]->value, tp);
-            IR* code1 = new IR(place, STAR, tp_addr, "");
+            IR* addr = new IR(tp_addr, OP_ADD, exp->sub_nodes[0]->value, tp);
+            IR* code1 = new IR(place, STAR, tp_addr, ""); //!!!!!!weather take this action
             return combine_codes(code, addr, code1);
         }
     }
@@ -280,11 +280,15 @@ IR* translate_args(Node* args, vector<string> &args_list) {
         string tp = new_place();
         IR* code = translate_exp(args->sub_nodes[0], tp);
         args_list.push_back(tp);
+        // if (exp->at.array_dim == 0) args_list.push_back(tp);
+        // else args_list.push_back(tp); //array type
         return code;
     } else { // Exp comma args
         string tp = new_place();
         IR* code1 = translate_exp(args->sub_nodes[0], tp);
         args_list.push_back(tp);
+        // if (exp->at.array_dim == 0) args_list.push_back(tp);
+        // else args_list.push_back("&" + tp); //array type
         IR* code2 = translate_args(args->sub_nodes[2], args_list); 
         return combine_codes(code1, code2);
     }
@@ -410,7 +414,8 @@ IR* translate_dec(Node* dec) {
                 size = size * t->array_rec[i];
             }
             variable->t->array_rec = array_rec;
-            return new IR(to_string(size * 4), DEC, var_dec->value, "");
+            string tp = new_place();
+            return combine_codes(new IR(to_string(size * 4), DEC, tp, ""), new IR(var_dec->value, ADDR, tp, "0"));
         }
     }
     return NULL;
@@ -451,7 +456,21 @@ void translate_parms(Node* node, IR* code) {
             IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
             combine_codes(code, para);
         } else { //VarDec LB INT RB
+            Node* var_dec = node->sub_nodes[0];
+            Variable* variable = variable_map->at(var_dec->value);
+            vector<int> array_rec;
+            v_type *t = variable->t;
+            int size = 1;
+            for (size_t i = 0; i < t->array_rec.size(); i++)
+            {
+                array_rec.push_back(size);
+                size = size * t->array_rec[i];
+            }
+            variable->t->array_rec = array_rec;
 
+            IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
+            combine_codes(code, para);
+            // combine_codes(code, new IR(to_string(size * 4), DEC, var_dec->value, ""));
         }
     }
     else {
