@@ -1,147 +1,17 @@
 #include "node.hpp"
 #include "string.h"
+#include "struct.hpp"
+#include "utils.hpp"
 #include <unordered_map>
 
-enum Operation {START, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_ASSIGN, 
-OP_LT, OP_LE, OP_GT, OP_GE, OP_NE, OP_EQ, OP_FUN, OP_PARAM, GOTO, 
-LABLE, OP_RETURN, READ, WRITE, CALL, ARG, PARA, DEC, ADDR, ADDR_A, STAR};
-
 extern std::unordered_map<std::string, Variable *> *variable_map;
-
-class IR {
-public:
-    string target;
-    Operation op;
-    string arg1;
-    string arg2;
-    IR *next;
-    IR *pre;
-    IR(string target, Operation op, string arg1, string arg2) {
-        this->target = target;
-        this->op = op;
-        this->arg1 = arg1;
-        this->arg2 = arg2;
-        this->pre = NULL;
-        this->next = NULL;
-        if (this->arg1.length() > 0 && this->arg1[0] >= '0' && this->arg1[0] <= '9')
-        {
-            this->arg1 = "#" + this->arg1;
-        }
-        if (this->arg2.length() > 0 && this->arg2[0] >= '0' && this->arg2[0] <= '9')
-        {
-            this->arg2 = "#" + this->arg2;
-        }
-    }
-    void append(IR *ir) {
-        this->next = ir;
-        ir->pre = this;
-    }
-};
-
-string transform(IR *code) {
-    string result = "";
-    while (code)
-    {
-        switch (code->op)
-        {
-            case OP_ADD: result += (code->target + " := " + code->arg1 + " + " + code->arg2 + "\n"); break;
-            case OP_SUB: result += (code->target + " := " + code->arg1 + " - " + code->arg2 + "\n"); break;
-            case OP_MUL: result += (code->target + " := " + code->arg1 + " * " + code->arg2 + "\n"); break;
-            case OP_DIV: result += (code->target + " := " + code->arg1 + " / " + code->arg2 + "\n"); break;
-            case OP_ASSIGN: result += (code->target + " := " + code->arg1 + "\n"); break;
-            case LABLE: result += "LABEL " + code->target + " :\n"; break;
-            case GOTO: result += "GOTO " + code->target + "\n";break;
-            case OP_EQ: result += "IF " + code->arg1 + " == " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_NE: result += "IF " + code->arg1 + " != " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_LT: result += "IF " + code->arg1 + " < " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_LE: result += "IF " + code->arg1 + " <= " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_GT: result += "IF " + code->arg1 + " > " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_GE: result += "IF " + code->arg1 + " >= " + code->arg2 + " GOTO " + code->target + "\n"; break;
-            case OP_RETURN: result += "RETURN " + code->target + "\n"; break;
-            case READ: result += "READ " + code->target + "\n"; break;
-            case WRITE: result += "WRITE " + code->target + "\n"; break;
-            case OP_FUN: result += "FUNCTION " + code->target + " :\n"; break;
-            case ARG: result += "ARG " + code->target + "\n"; break;
-            case CALL: result += code->target + " := CALL " + code->arg1 + "\n"; break;
-            case PARA: result += "PARAM " + code->target + "\n"; break;
-            case DEC: result += "DEC " + code->arg1 + " " + code->target + "\n"; break;
-            case ADDR: result += code->target + " := &" + code->arg1 + " + " + code->arg2 + "\n"; break;
-            case ADDR_A: result += "*" + code->target + " := " + code->arg1+ "\n"; break;
-            case STAR: result += code->target + " := *" + code->arg1 + "\n"; break;
-            default: break;
-        }
-        code = code->next;
-    }
-    return result;
-}
-
-void show_code(IR* code) {
-    cout << transform(code);
-}
-
-void debug(int line) {
-    cout << "line" << line << endl;
-}
-
-int place_count = 0;
-int lable_count = 0;
+extern std::unordered_map<std::string, my_struct*> struct_map;
 
 IR* translate_args(Node* args, vector<string> &args_list);
 
 void translate_compst(Node* node, IR* code);
 
-IR* translate_exp(Node* exp, string place);
-
-string new_place(){
-    place_count+= 1;
-    return "t" + to_string(place_count);
-}
-
-string new_lable(){
-    lable_count+= 1;
-    return "L" + to_string(lable_count);
-}
-
-IR* combine_codes(IR* code1, IR* code2, IR* code3) {
-    if (code1 && code2 && code3)
-    {
-        /* code */
-        IR* temp = code1;
-        while (temp->next)
-        {
-            temp = temp->next;
-        }
-        temp->append(code2);
-        temp = code2;
-        while (temp->next)
-        {
-            temp = temp->next;
-        }
-        temp->append(code3);
-        return code1;
-    }
-    else {
-        cout << "null code" << endl;
-        return NULL;
-    }
-    
-}
-
-IR* combine_codes(IR* code1, IR* code2) {
-    if (code1 && code2)
-    {
-        IR* temp = code1;
-        while (temp->next)
-        {
-            temp = temp->next;
-        }
-        temp->append(code2);
-        return code1;
-    } else {
-        cout << "null code" << endl;
-        return NULL;
-    }
-}
+IR* translate_exp(Node* exp, string place, bool get_content = true);
 
 IR* translate_array(Node* exp, string place, int layer) {
     if (exp->sub_nodes[0]->sub_nodes.size() == 4)
@@ -154,7 +24,7 @@ IR* translate_array(Node* exp, string place, int layer) {
         string tp1 = new_place();
         IR* code = translate_exp(exp->sub_nodes[2], tp1);
         string tp2 = new_place();
-        IR* now = new IR(tp2, OP_MUL, tp1, to_string(width * 4));
+        IR* now = new IR(tp2, OP_MUL, tp1, to_string(width * calculate_single_size(variable->t)));
         IR* combine = new IR(place, OP_ADD, tp, tp2);
         now->append(combine);
         return combine_codes(sub_code, code, now);
@@ -165,11 +35,18 @@ IR* translate_array(Node* exp, string place, int layer) {
         int width = variable->t->array_rec[layer];
         string tp = new_place();
         IR* code = translate_exp(exp->sub_nodes[2], tp);
-        return combine_codes(code, new IR(place, OP_MUL, tp, to_string(width * 4)));
+        string tp1 = new_place();
+        IR* code1 = new IR(tp1, OP_MUL, tp, to_string(width * calculate_single_size(variable->t)));
+        string tp2 = new_place();
+        IR *code2 = translate_exp(exp->sub_nodes[0], tp2, false);
+        IR* code3 = new IR(place, OP_ADD, tp1, tp2);
+        combine_codes(code2, code3);
+        return combine_codes(code, code1, code2);
     }
+    return NULL;
 }
 
-IR* translate_exp(Node* exp, string place) {
+IR* translate_exp(Node* exp, string place, bool get_content) {
     int size = exp->sub_nodes.size();
     if (size == 1)
     {
@@ -213,23 +90,41 @@ IR* translate_exp(Node* exp, string place) {
                 IR* code2 = new IR(variable, OP_ASSIGN, tp, "");
                 return combine_codes(code1, code2);
             } 
-            else { //Exp LB Exp RB
+            else if (exp1->sub_nodes.size() == 3) { //Exp DOT ID
                 string tp = new_place();
-                IR* code = translate_array(exp1, tp, 0);
+                string member = exp1->sub_nodes[2]->value;
+                IR* code = translate_exp(exp1->sub_nodes[0], tp, false);
+                string st_name = exp1->sub_nodes[0]->value; 
+                Variable* v = variable_map->at(st_name);
+                my_struct* st = struct_map[v->t->struct_name];
+                int bias = 0;
+                for(Variable* v : st->variables) {
+                    if (v->name.compare(member) == 0) break;
+                    else bias += calculate_type_size(v->t);
+                }
                 string tp_addr = new_place();
-                IR* addr = new IR(tp_addr, OP_ADD, exp1->value, tp);
+                IR* addr = new IR(tp_addr, OP_ADD, tp, to_string(bias));
                 string tp1 = new_place();
                 IR* code1 = translate_exp(exp2, tp1);
                 IR* code2 = new IR(tp_addr, ADDR_A, tp1, "");
                 combine_codes(code1, code2);
                 return combine_codes(code, addr, code1);
             }
+            else { //Exp LB Exp RB
+                string tp_addr = new_place();
+                IR* code = translate_array(exp1, tp_addr, 0);
+                string tp1 = new_place();
+                IR* code1 = translate_exp(exp2, tp1);
+                IR* code2 = new IR(tp_addr, ADDR_A, tp1, "");
+                combine_codes(code1, code2);
+                return combine_codes(code, code1);
+            }
         } else if(op->name.compare("Exp") == 0) { //LP Exp RP
             IR* code = translate_exp(op, place);
             return code;
         }
         //functions
-        else if(exp1->name.compare("ID") == 0 ){
+        else if(op->name.compare("LP") == 0 ){
             if (exp1->value.compare("read") == 0)
             {
                 return new IR(place, READ, "", "");
@@ -238,6 +133,30 @@ IR* translate_exp(Node* exp, string place) {
                 return new IR(place, CALL, exp1->value, "");
             }    
         } 
+        else if(op->name.compare("DOT") == 0) { //Exp DOT ID
+            string tp = new_place();
+            string member = exp2->value;
+            IR* code = translate_exp(exp1, tp, false);
+
+            Variable* v = variable_map->at(exp1->value);
+            my_struct* st = struct_map[v->t->struct_name];
+            int bias = 0;
+            for(Variable* v : st->variables) {
+                if (v->name.compare(member) == 0) break;
+                else bias += calculate_type_size(v->t);
+            }
+            string tp_addr = new_place();
+            if(get_content) {
+                IR* addr = new IR(tp_addr, OP_ADD, tp, to_string(bias));
+                string tp1 = new_place();
+                IR* code1 = new IR(place, STAR, tp_addr, "");
+                return combine_codes(code, addr, code1);
+            } else {
+                IR* addr = new IR(place, OP_ADD, tp, to_string(bias));
+                IR* temp = combine_codes(code, addr);
+                return temp;
+            }
+        }
     }
     else if(size == 4) {
         if (exp->sub_nodes[0]->value.compare("write") == 0)//write LP Args RP
@@ -263,12 +182,12 @@ IR* translate_exp(Node* exp, string place) {
             IR* call = new IR(place, CALL, exp->sub_nodes[0]->value, "");
             return combine_codes(code1, code2, call);
         } else if (exp->sub_nodes[0]->name.compare("Exp") == 0) { //Exp LB Exp RB
-            string tp = new_place();
-            IR* code = translate_array(exp, tp, 0);
             string tp_addr = new_place();
-            IR* addr = new IR(tp_addr, OP_ADD, exp->sub_nodes[0]->value, tp);
-            IR* code1 = new IR(place, STAR, tp_addr, ""); //!!!!!!weather take this action
-            return combine_codes(code, addr, code1);
+            IR* code = translate_array(exp, tp_addr, 0);
+            if(get_content) {
+                IR* code1 = new IR(place, STAR, tp_addr, ""); //!!!!!!weather take this action
+                return combine_codes(code, code1);
+            } else return combine_codes(code, new IR(place, OP_ASSIGN, tp_addr, ""));
         }
     }
     return NULL;
@@ -278,19 +197,29 @@ IR* translate_args(Node* args, vector<string> &args_list) {
     if (args->sub_nodes.size() == 1) //Exp
     {
         string tp = new_place();
-        IR* code = translate_exp(args->sub_nodes[0], tp);
+        IR* code;
+        if (variable_map->count(args->sub_nodes[0]->value))
+        {
+            Variable* v = variable_map->at(args->sub_nodes[0]->value);
+            if (v->t->type != TYPE_STRUCT) code = translate_exp(args->sub_nodes[0], tp);
+            else code = translate_exp(args->sub_nodes[0], tp, false);
+        }
+        else code = translate_exp(args->sub_nodes[0], tp);
         args_list.push_back(tp);
-        // if (exp->at.array_dim == 0) args_list.push_back(tp);
-        // else args_list.push_back(tp); //array type
         return code;
     } else { // Exp comma args
         string tp = new_place();
-        IR* code1 = translate_exp(args->sub_nodes[0], tp);
+        IR* code;
+        if (variable_map->count(args->sub_nodes[0]->value))
+        {
+            Variable* v = variable_map->at(args->sub_nodes[0]->value);
+            if (v->t->type != TYPE_STRUCT) code = translate_exp(args->sub_nodes[0], tp);
+            else code = translate_exp(args->sub_nodes[0], tp, false);
+        }
+        else code = translate_exp(args->sub_nodes[0], tp);       
         args_list.push_back(tp);
-        // if (exp->at.array_dim == 0) args_list.push_back(tp);
-        // else args_list.push_back("&" + tp); //array type
         IR* code2 = translate_args(args->sub_nodes[2], args_list); 
-        return combine_codes(code1, code2);
+        return combine_codes(code, code2);
     }
 }
 
@@ -402,20 +331,15 @@ IR* translate_dec(Node* dec) {
         return combine_codes(code1, code2);
     } else { //VarDec
         Node* var_dec = dec->sub_nodes[0];
+        Variable *v = variable_map->at(var_dec->value);
+        int v_size = calculate_type_size(v->t);
         if (var_dec->sub_nodes.size() == 4)
         {
-            Variable* variable = variable_map->at(var_dec->value);
-            vector<int> array_rec;
-            v_type *t = variable->t;
-            int size = 1;
-            for (size_t i = 0; i < t->array_rec.size(); i++)
-            {
-                array_rec.push_back(size);
-                size = size * t->array_rec[i];
-            }
-            variable->t->array_rec = array_rec;
             string tp = new_place();
-            return combine_codes(new IR(to_string(size * 4), DEC, tp, ""), new IR(var_dec->value, ADDR, tp, "0"));
+            return combine_codes(new IR(to_string(v_size), DEC, tp, ""), new IR(var_dec->value, ADDR, tp, "0"));
+        } else if(v->t->type == TYPE_STRUCT) {
+            string tp = new_place();
+            return combine_codes(new IR(to_string(v_size), DEC, tp, ""), new IR(var_dec->value, ADDR, tp, "0"));
         }
     }
     return NULL;
@@ -451,27 +375,8 @@ void translate_compst(Node* node, IR* code) {
 void translate_parms(Node* node, IR* code) {
     if (node->name.compare("VarDec") == 0)
     {
-        if (node->sub_nodes.size() == 1) //ID
-        {
-            IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
-            combine_codes(code, para);
-        } else { //VarDec LB INT RB
-            Node* var_dec = node->sub_nodes[0];
-            Variable* variable = variable_map->at(var_dec->value);
-            vector<int> array_rec;
-            v_type *t = variable->t;
-            int size = 1;
-            for (size_t i = 0; i < t->array_rec.size(); i++)
-            {
-                array_rec.push_back(size);
-                size = size * t->array_rec[i];
-            }
-            variable->t->array_rec = array_rec;
-
-            IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
-            combine_codes(code, para);
-            // combine_codes(code, new IR(to_string(size * 4), DEC, var_dec->value, ""));
-        }
+        IR* para = new IR(node->sub_nodes[0]->value, PARA, "", "");
+        combine_codes(code, para);
     }
     else {
         for (size_t i = 0; i < node->sub_nodes.size(); i++)
@@ -521,6 +426,7 @@ void translate_extdef(Node *node, IR* code) {
 }
 
 void main_translate(Node* root) {
+    transform_array();
     IR* code = new IR("", START, "", "");
     translate_extdef(root, code);
     show_code(code);

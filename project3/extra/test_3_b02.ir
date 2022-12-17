@@ -1,0 +1,198 @@
+FUNCTION Swap :
+PARAM a
+PARAM l
+PARAM h
+t4 := l
+t5 := t4 * #4
+t6 := a
+t3 := t5 + t6
+t2 := *t3
+temp := t2
+t9 := l
+t10 := t9 * #4
+t11 := a
+t8 := t10 + t11
+t14 := h
+t15 := t14 * #4
+t16 := a
+t13 := t15 + t16
+t12 := *t13
+*t8 := t12
+t19 := h
+t20 := t19 * #4
+t21 := a
+t18 := t20 + t21
+t22 := temp
+*t18 := t22
+t23 := #0
+RETURN t23
+FUNCTION Partition :
+PARAM b
+PARAM low
+PARAM high
+t26 := low
+t27 := t26 * #4
+t28 := b
+t25 := t27 + t28
+t24 := *t25
+base := t24
+LABEL L1 :
+t29 := low
+t30 := high
+IF t29 < t30 GOTO L2
+GOTO L3
+LABEL L2 :
+LABEL L4 :
+t31 := low
+t32 := high
+IF t31 < t32 GOTO L7
+GOTO L6
+LABEL L7 :
+t36 := high
+t37 := t36 * #4
+t38 := b
+t35 := t37 + t38
+t33 := *t35
+t34 := base
+IF t33 >= t34 GOTO L5
+GOTO L6
+LABEL L5 :
+t41 := high
+t42 := #1
+t40 := t41 - t42
+high := t40
+GOTO L4
+LABEL L6 :
+t44 := b
+t45 := low
+t46 := high
+ARG t46
+ARG t45
+ARG t44
+t43 := CALL Swap
+LABEL L8 :
+t47 := low
+t48 := high
+IF t47 < t48 GOTO L11
+GOTO L10
+LABEL L11 :
+t52 := low
+t53 := t52 * #4
+t54 := b
+t51 := t53 + t54
+t49 := *t51
+t50 := base
+IF t49 <= t50 GOTO L9
+GOTO L10
+LABEL L9 :
+t57 := low
+t58 := #1
+t56 := t57 + t58
+low := t56
+GOTO L8
+LABEL L10 :
+t60 := b
+t61 := low
+t62 := high
+ARG t62
+ARG t61
+ARG t60
+t59 := CALL Swap
+GOTO L1
+LABEL L3 :
+t63 := low
+RETURN t63
+FUNCTION QuickSort :
+PARAM c
+PARAM low1
+PARAM high1
+t64 := low1
+t65 := high1
+IF t64 < t65 GOTO L12
+GOTO L13
+LABEL L12 :
+t67 := c
+t68 := low1
+t69 := high1
+ARG t69
+ARG t68
+ARG t67
+t66 := CALL Partition
+base1 := t66
+t71 := c
+t72 := low1
+t74 := base1
+t75 := #1
+t73 := t74 - t75
+ARG t73
+ARG t72
+ARG t71
+t70 := CALL QuickSort
+t77 := c
+t79 := base1
+t80 := #1
+t78 := t79 + t80
+t81 := high1
+ARG t81
+ARG t78
+ARG t77
+t76 := CALL QuickSort
+LABEL L13 :
+t82 := #0
+RETURN t82
+FUNCTION main :
+t83 := #8
+n := t83
+DEC t84 32
+arr := &t84 + #0
+t85 := #0
+i := t85
+LABEL L14 :
+t86 := i
+t87 := n
+IF t86 < t87 GOTO L15
+GOTO L16
+LABEL L15 :
+t90 := i
+t91 := t90 * #4
+t92 := arr
+t89 := t91 + t92
+READ t93
+*t89 := t93
+t96 := i
+t97 := #1
+t95 := t96 + t97
+i := t95
+GOTO L14
+LABEL L16 :
+t99 := arr
+t100 := #0
+t102 := n
+t103 := #1
+t101 := t102 - t103
+ARG t101
+ARG t100
+ARG t99
+t98 := CALL QuickSort
+t105 := #0
+i := t105
+LABEL L17 :
+t106 := i
+t107 := n
+IF t106 < t107 GOTO L18
+GOTO L19
+LABEL L18 :
+t111 := i
+t112 := t111 * #4
+t113 := arr
+t110 := t112 + t113
+t109 := *t110
+WRITE t109
+t116 := i
+t117 := #1
+t115 := t116 + t117
+i := t115
+GOTO L17
+LABEL L19 :
+t118 := #0
+RETURN t118

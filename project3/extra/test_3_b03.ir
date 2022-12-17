@@ -1,0 +1,133 @@
+FUNCTION calculate_avg :
+PARAM g
+t1 := #0
+sum := t1
+t2 := #0
+k := t2
+LABEL L1 :
+t3 := k
+t4 := #10
+IF t3 < t4 GOTO L2
+GOTO L3
+LABEL L2 :
+t7 := sum
+t11 := k
+t12 := t11 * #12
+t14 := g
+t13 := t14 + #4
+t10 := t12 + t13
+t9 := t10
+t16 := t9 + #4
+t8 := *t16
+t6 := t7 + t8
+sum := t6
+t20 := k
+t21 := #1
+t19 := t20 + t21
+k := t19
+GOTO L1
+LABEL L3 :
+t23 := g
+t24 := t23 + #124
+t26 := sum
+t27 := #10
+t25 := t26 / t27
+*t24 := t25
+t29 := g
+t30 := t29 + #124
+t28 := *t30
+RETURN t28
+FUNCTION main :
+DEC t32 640
+company := &t32 + #0
+t33 := #0
+i := t33
+t34 := #0
+avg := t34
+LABEL L4 :
+t35 := i
+t36 := #5
+IF t35 < t36 GOTO L5
+GOTO L6
+LABEL L5 :
+t38 := #0
+j := t38
+t42 := i
+t43 := t42 * #128
+t44 := company
+t41 := t43 + t44
+t40 := t41
+t45 := t40 + #0
+t46 := i
+*t45 := t46
+LABEL L7 :
+t47 := j
+t48 := #10
+IF t47 < t48 GOTO L8
+GOTO L9
+LABEL L8 :
+t52 := j
+t53 := t52 * #12
+t57 := i
+t58 := t57 * #128
+t59 := company
+t56 := t58 + t59
+t55 := t56
+t54 := t55 + #4
+t51 := t53 + t54
+t50 := t51
+t61 := t50 + #4
+t65 := #3000
+t67 := i
+t68 := #100
+t66 := t67 * t68
+t63 := t65 + t66
+t69 := j
+t70 := #150
+t64 := t69 * t70
+t62 := t63 + t64
+*t61 := t62
+t73 := j
+t74 := #1
+t72 := t73 + t74
+j := t72
+GOTO L7
+LABEL L9 :
+t78 := i
+t79 := t78 * #128
+t80 := company
+t77 := t79 + t80
+t76 := t77
+t81 := t76 + #124
+t85 := i
+t86 := t85 * #128
+t87 := company
+t84 := t86 + t87
+t83 := t84
+ARG t83
+t82 := CALL calculate_avg
+*t81 := t82
+t90 := avg
+t94 := i
+t95 := t94 * #128
+t96 := company
+t93 := t95 + t96
+t92 := t93
+t97 := t92 + #124
+t91 := *t97
+t89 := t90 + t91
+avg := t89
+t101 := i
+t102 := #1
+t100 := t101 + t102
+i := t100
+GOTO L4
+LABEL L6 :
+t105 := avg
+t106 := #5
+t104 := t105 / t106
+avg := t104
+t108 := avg
+WRITE t108
+t109 := #0
+RETURN t109

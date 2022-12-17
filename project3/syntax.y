@@ -1,6 +1,7 @@
 %{
     #include "lex.yy.c"
     #include "semantic_check.hpp"
+    #include "generate_ir.hpp"
     #include <unordered_map> //hash_map
     #include <iostream>
     #include <stack>
@@ -8,14 +9,12 @@
     void error_info(std::string s);
     void lineinfor(void);
     void traverse(string tab, Node *node);
-    Variable *find_variable(std::string ID); 
     Node* root;
     extern int isError;
     #define PARSER_error_OUTPUT stdout
     std::unordered_map<std::string, Variable *> *variable_map = new std::unordered_map<std::string, Variable*>();
     std::unordered_map<std::string, Function*> function_map;
     std::unordered_map<std::string, my_struct*> struct_map;
-    std::vector<std::unordered_map<std::string, Variable *> *> scope;
     //yydebug = 1;
 %}
 %locations
@@ -38,7 +37,7 @@
 %nonassoc ELSE 
 
 %type<node> INT FLOAT CHAR ID TYPE STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT      
-%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR FOR LC_T RC_T Fun_Scope
+%type<node> LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC ERROR FOR
 
 %type <node> Program ExtDefList ExtDef ExtDecList Specifier StructSpecifier VarDec Specifier_FunDec
 %type <node> FunDec VarList ParamDec CompSt StmtList Stmt DefList Def DecList Dec Args Exp
@@ -90,14 +89,6 @@ ExtDef:
         if (function_map.count(fun_name) && $1->at.type != TYPE_ERROR) {
             Function* fun = function_map[fun_name];
             check_return(fun->return_type, $2);
-        }
-        scope.pop_back();
-        if(!scope.empty()) {
-            variable_map = scope.back();
-            // cout << variable_map->size();
-        }
-        else {
-            variable_map = NULL;
         }
     }
     |  Specifier ExtDecList error {error_info("Missing semicolon ';'");}
@@ -156,7 +147,7 @@ Specifier:
     }
     ;
 StructSpecifier: 
-    STRUCT ID LC_T DefList RC_T {
+    STRUCT ID LC DefList RC {
         $$ = new Node("StructSpecifier", @$.first_line);
         $$->add_sub($1);  
         $$->add_sub($2);  
@@ -183,17 +174,19 @@ StructSpecifier:
         }
         $$->at.struct_name = $2->value;
     }
-    | STRUCT ID LC_T DefList error {error_info("Missing closing curly braces '}'");}
-    | STRUCT ID DefList RC_T error {error_info("Missing beginning curly braces '{'");}
+    | STRUCT ID LC DefList error {error_info("Missing closing curly braces '}'");}
+    | STRUCT ID DefList RC error {error_info("Missing beginning curly braces '{'");}
     ;
 /* declarator */
 VarDec:
     ID {
         $$ = new Node("VarDec", @$.first_line);
+        $$->value = $1->value;
         $$->add_sub($1);
     }
     | VarDec LB INT RB {
         $$ = new Node("VarDec", @$.first_line);
+        $$->value = $1->value;
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
@@ -206,30 +199,21 @@ VarDec:
     | VarDec LB INT error {error_info("Missing closing bracket ']'");}
     ;
 FunDec:
-    Fun_Scope LP VarList RP {
+    ID LP VarList RP {
         $$ = new Node("FunDec", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);
     }
-    | Fun_Scope LP RP {
+    | ID LP RP {
         $$ = new Node("FunDec", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
         $$->add_sub($3);
     }
-    | Fun_Scope LP error { error_info("Missing closing parenthesis ')'"); }
-    | Fun_Scope LP VarList error { error_info("Missing closing parenthesis ')'"); }
-    ;
-Fun_Scope:
-    ID
-    {
-        $$ = $1;
-        std::unordered_map<std::string, Variable *> * new_variable_map = new unordered_map<std::string, Variable *>();
-        scope.push_back(new_variable_map);
-        variable_map = new_variable_map;
-    }
+    | ID LP error { error_info("Missing closing parenthesis ')'"); }
+    | ID LP VarList error { error_info("Missing closing parenthesis ')'"); }
     ;
 VarList:
     ParamDec COMMA VarList {
@@ -263,7 +247,7 @@ ParamDec:
     ;
 /* statement */
 CompSt:
-    LC_T DefList StmtList RC_T{
+    LC DefList StmtList RC{
         $$ = new Node("CompSt", @$.first_line);
         $$->add_sub($1);
         $$->add_sub($2);
@@ -271,28 +255,6 @@ CompSt:
         $$->add_sub($4);
     }
     /* | LC DefList StmtList error %prec LOWER_ERROR {error_info("Missing closing curly braces '}'");} */
-    ;
-LC_T:
-    LC {
-        $$ = $1;
-        std::unordered_map<std::string, Variable *> * new_variable_map = new unordered_map<std::string, Variable *>();
-        scope.push_back(new_variable_map);
-        variable_map = new_variable_map;
-        // cout << variable_map << endl;
-    }
-    ;
-RC_T:
-    RC {
-        $$ = $1;
-        scope.pop_back();
-        if(!scope.empty()) {
-            variable_map = scope.back();
-            // cout << variable_map->size();
-        }
-        else {
-            variable_map = NULL;
-        }
-    }
     ;
 StmtList:{
     $$ = new Node();
@@ -562,7 +524,7 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);
-        if (find_variable($1->value)) {
+        if (variable_map->count($1->value)) {
             semantic_error(11, $$->line_num, $1->value);
             $$->at.type = TYPE_ERROR;
             // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
@@ -590,7 +552,7 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);      
         check_fun($1, NULL);  
-        if (find_variable($1->value)) {
+        if (variable_map->count($1->value)) {
             semantic_error(11, $$->line_num, "");
             $$->at.type = TYPE_ERROR;
             // cout << "Error type 11 at " << $$->line_num << "applying function invocation operator (foo(...)) on non-function names" << endl;
@@ -618,6 +580,7 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         $$->add_sub($4);    
+        $$->value = $1->value;
         if ($1->at.array_dim <= 0) {
             semantic_error(10, $$->line_num, "");
             // std::cout << "Type 10 error at line " << @$.first_line << " applying indexing operator ([...]) on non-array type variables\n";
@@ -639,6 +602,7 @@ Exp:
         $$->add_sub($2);
         $$->add_sub($3);
         v_type t = $1->at;
+        $$->value = $3->value;
         if (t.array_dim == 0 && struct_map.count(t.struct_name)) {
             v_type *temp = check_struct_member(struct_map[t.struct_name], $3->value, $$->line_num);
             if (temp) {
@@ -655,8 +619,9 @@ Exp:
     | ID {
         $$ = new Node("Exp", @$.first_line);
         $$->add_sub($1);
-        Variable *v = find_variable($1->value); 
-        if (v) {
+        $$->value = $1->value;
+        if (variable_map->count($1->value)) {
+            Variable *v = variable_map->at($1->value); 
             v_type* t = v->t;
             $$->at.type = t->type;
             $$->at.struct_name = t->struct_name;
@@ -745,18 +710,15 @@ void error_info(std::string s){
     std::cerr << s << std::endl;
 }
 
-Variable *find_variable(std::string ID) {
-    int l = scope.size() - 1;
-    while (l >= 0) {
-        if(scope[l]->count(ID)) {
-            return scope[l]->at(ID);
-        }
-        l --;
-    }
-    return NULL;
-}
 int main(int argc, char **argv) {
-    scope.push_back(variable_map);
+    vector<v_type*> read_parameters;
+    vector<v_type*> write_parameters;
+    write_parameters.push_back(new v_type(TYPE_INT));
+    Function* read = new Function("read", new v_type(TYPE_INT), read_parameters);
+    Function* write = new Function("read", new v_type(TYPE_INT), write_parameters);
+    function_map["read"] = read;
+    function_map["write"] = write;
+
     if (argc <= 1) {
         fprintf(stderr, "no input path");
         return 1;
@@ -800,8 +762,10 @@ int main(int argc, char **argv) {
         }
         std::cout << std::endl;
     } */
-    /* if (isError == 0) {
-        traverse("", root);
-    } */
+    if (isError == 0) {
+        /* traverse("", root); */
+        /* cout << endl; */
+        main_translate(root);
+    }
     return 0;
 }

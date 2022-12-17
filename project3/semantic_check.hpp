@@ -84,9 +84,13 @@ void def_variable(Node *node) {
         else if(temp->name.compare("VarDec")==0) {
             int dimension = 0;
             vector<int> array_rec; array_rec.push_back(stoi(node->sub_nodes[2]->value));
+            vector<int> origin_rec; origin_rec.push_back(stoi(node->sub_nodes[2]->value));
             while(!temp->sub_nodes.empty())
             {
-                if (temp->sub_nodes.size() == 4) array_rec.push_back(stoi(temp->sub_nodes[2]->value));
+                if (temp->sub_nodes.size() == 4) {
+                    array_rec.push_back(stoi(temp->sub_nodes[2]->value));
+                    origin_rec.push_back(stoi(temp->sub_nodes[2]->value));
+                }
                 dimension ++;
                 temp = temp->sub_nodes[0];
             }
@@ -95,6 +99,7 @@ void def_variable(Node *node) {
                 Variable* variable = variable_map->at(variable_name);
                 variable->t->array_dim = dimension;
                 variable->t->array_rec = array_rec;
+                variable->t->origin_rec= origin_rec;
             }
         }
     }
@@ -210,8 +215,14 @@ void def_struct_type(my_struct* stc, TYPE_T type, string struct_name, Node* node
         }
         else if(temp->name.compare("VarDec")==0) {
             int dimension = 0;
+            vector<int> array_rec; array_rec.push_back(stoi(node->sub_nodes[2]->value));
+            vector<int> origin_rec; origin_rec.push_back(stoi(node->sub_nodes[2]->value));
             while(!temp->sub_nodes.empty())
             {
+                if (temp->sub_nodes.size() == 4) {
+                    array_rec.push_back(stoi(temp->sub_nodes[2]->value));
+                    origin_rec.push_back(stoi(temp->sub_nodes[2]->value));
+                }
                 dimension ++;
                 temp = temp->sub_nodes[0];
             }
@@ -221,6 +232,8 @@ void def_struct_type(my_struct* stc, TYPE_T type, string struct_name, Node* node
                 {
                     if (var->name.compare(variable_name) == 0) {
                         var->t->array_dim = dimension;
+                        var->t->array_rec = array_rec;
+                        var->t->origin_rec= origin_rec;
                     }
                 }
             }
