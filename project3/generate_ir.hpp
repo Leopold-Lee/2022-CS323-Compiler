@@ -3,6 +3,7 @@
 #include "struct.hpp"
 #include "utils.hpp"
 #include <unordered_map>
+#include <unordered_set>
 
 extern std::unordered_map<std::string, Variable *> *variable_map;
 extern std::unordered_map<std::string, my_struct*> struct_map;
@@ -425,9 +426,56 @@ void translate_extdef(Node *node, IR* code) {
     }
 }
 
+void optimize(IR* code) {
+    IR* temp1 = code;
+    IR* temp2 = code;
+    unordered_set<string> opt_set;
+    while (temp1)
+    {
+        if (temp1->op == PARA) opt_set.insert(temp1->target);
+
+        if (temp1->op == OP_ASSIGN)
+        {
+            temp2 = temp1->next;
+            while (temp2)
+            {
+                // bool is_opeon = temp2->op == OP_ADD || temp2->op == OP_SUB || temp2->op == OP_MUL || temp2->op == OP_DIV || temp2->op == OP_ASSIGN 
+                // || temp2->op == READ || temp2->op == CALL || temp2->op == STAR || temp2->op == ADDR || temp2->op == ADDR_A || temp2->op == DEC || temp2->op == OP_RETURN || temp2->op == ARG;
+                if (temp2->target.compare(temp1->target) == 0) opt_set.insert(temp1->target);
+                temp2 = temp2->next;
+            }
+            temp2 = temp1->next;
+            if (!opt_set.count(temp1->target))
+            {
+                while (temp2)
+                {
+                    if (temp2->op != DEC && temp2->arg1.compare(temp1->target) == 0) {
+                        temp2->arg1 = temp1->arg1;
+                    }
+                    if (temp2->op != DEC && temp2->arg2.compare(temp1->target) == 0) {
+                        temp2->arg2 = temp1->arg1;
+                    }
+                    if (temp2->op == WRITE && temp2->target.compare(temp1->target) == 0) {
+                        temp2->target = temp1->arg1;
+                    }
+                    temp2 = temp2->next;
+                }
+                if (temp1->pre)
+                {
+                    IR* t = temp1->next;
+                    temp1->pre->next = t;
+                    t->pre = temp1->pre; 
+                }
+            }
+        }
+        temp1 = temp1->next;
+    }
+}
+
 void main_translate(Node* root) {
     transform_array();
     IR* code = new IR("", START, "", "");
     translate_extdef(root, code);
+    optimize(code);
     show_code(code);
 }

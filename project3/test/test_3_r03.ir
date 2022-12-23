@@ -1,59 +1,36 @@
 FUNCTION main :
-t1 := #30
-N := t1
-t2 := #0
-num := t2
-t3 := #1
-i := t3
-t4 := #1
-k := t4
+num := #0
+i := #1
+k := #1
 LABEL L1 :
-t5 := k
-t6 := N
-IF t5 <= t6 GOTO L2
+IF k <= #30 GOTO L2
 GOTO L3
 LABEL L2 :
 LABEL L4 :
-t7 := i
-t8 := k
-IF t7 <= t8 GOTO L5
+IF i <= k GOTO L5
 GOTO L6
 LABEL L5 :
-t9 := k
-t13 := k
-t14 := i
-t11 := t13 / t14
-t12 := i
-t10 := t11 * t12
-IF t9 == t10 GOTO L7
+t11 := k / i
+t10 := t11 * i
+IF k == t10 GOTO L7
 GOTO L8
 LABEL L7 :
-t17 := num
-t18 := #1
-t16 := t17 + t18
+t16 := num + #1
 num := t16
 LABEL L8 :
-t21 := i
-t22 := #1
-t20 := t21 + t22
+t20 := i + #1
 i := t20
 GOTO L4
 LABEL L6 :
-t23 := num
-t24 := #2
-IF t23 == t24 GOTO L9
+IF num == #2 GOTO L9
 GOTO L10
 LABEL L9 :
 t26 := k
 WRITE t26
 LABEL L10 :
-t28 := #1
-i := t28
-t30 := #0
-num := t30
-t33 := k
-t34 := #1
-t32 := t33 + t34
+i := #1
+num := #0
+t32 := k + #1
 k := t32
 GOTO L1
 LABEL L3 :

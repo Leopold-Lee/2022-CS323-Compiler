@@ -1,16 +1,22 @@
 FUNCTION main :
 READ t2
-IF t2 > #0 GOTO L1
+n := t2
+t3 := n
+t4 := #0
+IF t3 > t4 GOTO L1
 GOTO L2
 LABEL L1 :
 t6 := #1
 WRITE t6
 GOTO L3
 LABEL L2 :
-IF t2 < #0 GOTO L4
+t7 := n
+t8 := #0
+IF t7 < t8 GOTO L4
 GOTO L5
 LABEL L4 :
-t10 := #0 - #1
+t11 := #1
+t10 := #0 - t11
 WRITE t10
 GOTO L6
 LABEL L5 :

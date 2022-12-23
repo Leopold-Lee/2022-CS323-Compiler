@@ -1,59 +1,36 @@
 FUNCTION gcd1 :
 PARAM a
 PARAM b
-t3 := a
-t7 := a
-t8 := b
-t5 := t7 / t8
-t6 := b
-t4 := t5 * t6
-t2 := t3 - t4
+t5 := a / b
+t4 := t5 * b
+t2 := a - t4
 temp := t2
 LABEL L1 :
-t9 := temp
-t10 := #0
-IF t9 != t10 GOTO L2
+IF temp != #0 GOTO L2
 GOTO L3
 LABEL L2 :
-t12 := b
-a := t12
-t14 := temp
-b := t14
-t17 := a
-t21 := a
-t22 := b
-t19 := t21 / t22
-t20 := b
-t18 := t19 * t20
-t16 := t17 - t18
+a := b
+b := temp
+t19 := a / b
+t18 := t19 * b
+t16 := a - t18
 temp := t16
 GOTO L1
 LABEL L3 :
-t24 := b
-result := t24
-t25 := result
+t25 := b
 RETURN t25
 FUNCTION gcd2 :
 PARAM x
 PARAM y
-t26 := #0
-remainder := t26
-t27 := x
-t28 := y
-IF t27 > t28 GOTO L4
+remainder := #0
+IF x > y GOTO L4
 GOTO L5
 LABEL L4 :
-t31 := x
-t35 := x
-t36 := y
-t33 := t35 / t36
-t34 := y
-t32 := t33 * t34
-t30 := t31 - t32
+t33 := x / y
+t32 := t33 * y
+t30 := x - t32
 remainder := t30
-t37 := remainder
-t38 := #0
-IF t37 == t38 GOTO L7
+IF remainder == #0 GOTO L7
 GOTO L8
 LABEL L7 :
 t39 := y
@@ -69,17 +46,11 @@ RETURN t40
 LABEL L9 :
 GOTO L6
 LABEL L5 :
-t45 := y
-t49 := y
-t50 := x
-t47 := t49 / t50
-t48 := x
-t46 := t47 * t48
-t44 := t45 - t46
+t47 := y / x
+t46 := t47 * x
+t44 := y - t46
 remainder := t44
-t51 := remainder
-t52 := #0
-IF t51 == t52 GOTO L10
+IF remainder == #0 GOTO L10
 GOTO L11
 LABEL L10 :
 t53 := x
@@ -96,17 +67,15 @@ LABEL L12 :
 LABEL L6 :
 FUNCTION main :
 READ t57
-m := t57
 READ t58
-n := t58
-t61 := m
-t62 := n
+t61 := t57
+t62 := t58
 ARG t62
 ARG t61
 t60 := CALL gcd1
 WRITE t60
-t65 := m
-t66 := n
+t65 := t57
+t66 := t58
 ARG t66
 ARG t65
 t64 := CALL gcd2
